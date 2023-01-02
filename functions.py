@@ -1,9 +1,7 @@
 import numpy as np
 import random
 
-
-objects = {4: 300, 6: 220, 3: 400, 5: 280}
-base_length = 15
+from data import objects, base_length
 
 
 def sanityCheck(population):
@@ -22,7 +20,12 @@ def sanityCheck(population):
 
         total = 0
 
-    return sanity
+    total_demand = sum(objects.values())
+
+    if total_demand == sanity[0]:
+        return True
+    else:
+        return False
 
 
 def subtract_lists(list1, list2):
@@ -31,8 +34,8 @@ def subtract_lists(list1, list2):
     the number of times arr2 was subtracted from arr1 as the first element, followed by the resulting list.
 
     Parameters:
-        list1 (list): The list to subtract from.
-        list2 (list): The list to subtract.
+        list1 (list): The list to subtract from, which is the demand.
+        list2 (list): The list to subtract, which is the pattern.
 
     Returns:
         list: A new list with the number of times list2 was subtracted from arr1 as the first element,
@@ -58,7 +61,7 @@ def subtract_lists(list1, list2):
     result = list1
     result.insert(0, pattern_count)
 
-    # print(f"{'list1 (demand) result'}: {list1}")
+    print(f"{'list1 (demand) result'}: {list1}")
 
     return result
 
@@ -120,7 +123,7 @@ def zip_individual(individual):
     # Iterate over the list with a step of 5
     for i in range(0, len(individual), 5):
         # Create a new sublist with the elements from i to i+5
-        sublist = individual[i:i+5]
+        sublist = individual[i:i + 5]
         # Append the sublist to the sublists list
         sublists.append(sublist)
 
@@ -245,7 +248,6 @@ def create_initial_population(objects, base_length, POPULATION_SIZE):
 
 # fitness calculation
 def patternsWaste(individual):
-
     lengths = list(objects.keys())
     # zipped_individual = zip_individual(individual)
     waste_total = 0
@@ -342,5 +344,3 @@ def createOffspring(ind1, ind2):
             # print(f"{'pattern'}: {pattern}")
 
     return offspring
-
-

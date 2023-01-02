@@ -12,16 +12,14 @@ import functions
 RANDOM_SEED = 42
 random.seed(RANDOM_SEED)
 
-# Test data
-objects = {4: 300, 6: 200, 3: 400, 5: 200}
-base_length = 15
+# Import the test data
+from data import objects, base_length
 
 # Genetic Algorithm constants:
 POPULATION_SIZE = 50
 P_CROSSOVER = 0.9  # probability for crossover
-MAX_GENERATIONS = 4
+MAX_GENERATIONS = 10
 HALL_OF_FAME_SIZE = 1
-
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMin)
@@ -36,7 +34,6 @@ def crossoverFunction(ind1, ind2):
     offsprings = []
 
     while len(offsprings) < 2:
-
         offspring = functions.createOffspring(ind1[0], ind2[0])
 
         # create a new Individual object and set its fitness attribute
@@ -78,6 +75,8 @@ def GA():
     best = hof.items[0]
     print("-- Best Ever Individual = ", best)
     print("-- Best Ever Fitness = ", best.fitness.values[0])
+    print("-- Waste of Individual = ", functions.patternsWaste(best))
+    print("-- Sanity Check Of Individual = ", functions.sanityCheck(best))
 
     # extract statistics:
     maxFitnessValues, meanFitnessValues = logbook.select("max", "avg")
