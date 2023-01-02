@@ -1,220 +1,95 @@
-"""
-import datetime
+from deap import base
+from deap import creator
+from deap import tools
+from deap import algorithms
+import random
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from collections import OrderedDict
+import functions
 
-from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm.exc import NoResultFound
-from marshmallow import Schema, fields, ValidationError, pre_load
-from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
-from uuid import uuid4
-import os
+RANDOM_SEED = 42
+random.seed(RANDOM_SEED)
 
-app = Flask(__name__)
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'crud.sqlite')
-db = SQLAlchemy(app)
+# Test data
+objects = {4: 300, 6: 200, 3: 400, 5: 200}
+base_length = 15
 
-
-@app.before_request
-def create_tables():
-    db.drop_all()
-    db.create_all()
-
-
-### MODELS ###
-
-class RootOrder(db.Model):
-    __tablename__ = 'root_order'
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    # order = db.relationship('Order', backref=db.backref('root_order'))
-
-    def __repr__(self):
-        return f"{self.id}, {self.length}"
+# Genetic Algorithm constants:
+POPULATION_SIZE = 50
+P_CROSSOVER = 0.9  # probability for crossover
+MAX_GENERATIONS = 4
+HALL_OF_FAME_SIZE = 1
 
 
-class Order(db.Model):
-    __tablename__ = 'orders'
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMin)
 
-    id = db.Column(db.Integer, primary_key=True)
-    length = db.Column(db.Integer, nullable=False)
-    base_panel_id = db.Column(db.Integer)
-    root_order_id = db.Column(db.Integer, db.ForeignKey('root_order.id'))
-    root_order = db.relationship('RootOrder', backref=db.backref('orders'))
-
-    def __repr__(self):
-        return f"{self.id}, {self.length}"
+toolbox = base.Toolbox()
+toolbox.register('individualFunction', functions.create_individual, objects, base_length)
+toolbox.register("individualCreator", tools.initRepeat, creator.Individual, toolbox.individualFunction, 1)
+toolbox.register("population", tools.initRepeat, list, toolbox.individualCreator)
 
 
-### SCHEMAS ###
+def crossoverFunction(ind1, ind2):
+    offsprings = []
+
+    while len(offsprings) < 2:
+
+        offspring = functions.createOffspring(ind1[0], ind2[0])
+
+        # create a new Individual object and set its fitness attribute
+        offspring_individual = creator.Individual([offspring])
+
+        offsprings.append(offspring_individual)
+
+    return offsprings[0], offsprings[1]
 
 
-# Custom validator
-def must_not_be_blank(data):
-    if not data:
-        raise ValidationError("Data not provided.")
+# registering the fitness function
+toolbox.register("evaluate", functions.patternsWaste)
+
+# Tournament selection with tournament size of 3:
+toolbox.register("select", tools.selRoulette)
+
+# create operator for crossover
+toolbox.register("mate", crossoverFunction)
 
 
-class RootOrderSchema(SQLAlchemySchema):
-    class Meta:
-        model = RootOrder
+# Genetic Algorithm flow:
+def GA():
+    # create initial population (generation 0):
+    population = toolbox.population(n=POPULATION_SIZE)
 
-    id = auto_field()
-    orders = fields.Nested('OrderSchema', many=True)  # try auto_field here as well
+    # prepare the statistics object:
+    stats = tools.Statistics(lambda ind: ind.fitness.values)
+    stats.register("max", np.max)
+    stats.register("avg", np.mean)
 
+    # define the hall-of-fame object:
+    hof = tools.HallOfFame(HALL_OF_FAME_SIZE)
 
-class OrderSchema(SQLAlchemySchema):
-    class Meta:
-        model = Order
+    # perform the Genetic Algorithm flow with hof feature added:
+    population, logbook = algorithms.eaSimple(population, toolbox, cxpb=P_CROSSOVER, mutpb=0,
+                                              ngen=MAX_GENERATIONS, stats=stats, halloffame=hof, verbose=True)
 
-    id = auto_field()
-    length = auto_field()
-    base_panel_id = auto_field()
-    root_order_id = auto_field()
+    # print best solution found:
+    best = hof.items[0]
+    print("-- Best Ever Individual = ", best)
+    print("-- Best Ever Fitness = ", best.fitness.values[0])
 
+    # extract statistics:
+    maxFitnessValues, meanFitnessValues = logbook.select("max", "avg")
 
-# custom validator
-def must_not_be_blank(data):
-    if not data:
-        raise ValidationError('Data not provided.')
-
-
-order_schema = OrderSchema()
-orders_schema = OrderSchema(many=True)
-root_order_schema = RootOrderSchema()
-roots_order_schema = RootOrderSchema(many=True)
-
-
-### ROUTES ###
-
-@app.route('/order', methods=['POST'])
-def add_order():
-    json_data = request.get_json()
-    if not json_data:
-        return {'message': 'No input data provided'}, 400
-    # Validate and deserialize input
-    try:
-        data = order_schema.load(json_data)
-    except ValidationError as err:
-        return err.messages, 422
-
-    root = RootOrder.query.filter_by(id=data['root_order_id']).first()
-    if not root:
-        # Create a new root order
-        root = RootOrder(id=data['root_order_id'])
-        db.session.add(root)
-
-    # Create new order
-    order = Order(id=data['id'], length=data['length'],
-                  root_order_id=data['root_order_id'])
-    db.session.add(order)
-    db.session.commit()
-    result = order_schema.dump(Order.query.get(order.id))
-    return {"status": 'success', 'data': result}, 201
+    # plot statistics:
+    sns.set_style("whitegrid")
+    plt.plot(maxFitnessValues, color='red')
+    plt.plot(meanFitnessValues, color='green')
+    plt.xlabel('Generation')
+    plt.ylabel('Max / Average Fitness')
+    plt.title('Max and Average fitness over Generations')
+    plt.show()
 
 
-@app.route('/rootorders', methods=['POST'])
-def add_orders():
-    json_data = request.get_json()
-    if not json_data:
-        return {'message': 'No input data provided'}, 400
-    # Validate and deserialize input
-    try:
-        data = root_order_schema.load(json_data)
-    except ValidationError as err:
-        return err.messages, 422
-
-    root = RootOrder.query.filter_by(id=data['id']).first()
-    if not root:
-        # Create a new root order
-        root = RootOrder(id=data['id'])
-        db.session.add(root)
-
-    for order in data['orders']:
-        # Create new order
-        order = Order(id=order['id'], length=order['length'],
-                      root_order_id=order['root_order_id'])
-        db.session.add(order)
-
-    # Run optimization
-    OptimizeCuttingStock_Dummy(root)
-
-    db.session.commit()
-    result = root_order_schema.dump(root.query.get(root.id))
-    return {"status": 'success', 'data': result}, 201
-
-
-@app.route('/order', methods=['GET'])
-def get_orders():
-    orders = Order.query.all()
-    results = orders_schema.dump(orders)
-    return {"status": 'success', 'orders': results}, 200
-
-
-@app.route('/root/<int:id>', methods=['GET'])
-def get_root_order(id):
-    try:
-        root_order = RootOrder.query.filter_by(id=id).one()
-    except NoResultFound:
-        return {'message': 'Order not found'}, 404
-    result = root_order_schema.dump(root_order)
-    return {"status": 'success', 'orders': result}, 200
-
-
-@app.route('/order/<int:id>', methods=['GET'])
-def get_order(id):
-    try:
-        order = Order.query.filter_by(id=id).one()
-    except NoResultFound:
-        return {'message': 'Order not found'}, 404
-    result = order_schema.dump(order)
-    return {"status": 'success', 'orders': result}, 200
-
-
-### FUNCTIONS ###
-
-
-def OptimizeCuttingStock_Dummy(root):
-    # Dummy function to test the API
-    # Returns a list of orders belonging to a base panel of length 12450
-
-    # Get all orders
-    orders = Order.query.filter_by(root_order_id=root.id).all()
-
-    # initialize base panel
-    panels = [3100161, 3100162, 3100163, 3100164, 3100165, 3100165, 3100166, 3100167, 3100168, 3100169, 3100170]
-    base_length = 12450
-    cum_length = 0
-    panel_index = 0
-    iterations = len(orders)
-
-    # Loop until all panels are used and panels list is empty
-    while iterations > 0 and len(panels) > 0:
-        for order in orders:
-            if cum_length + order.length <= base_length:
-
-                # Assign order to base panel
-                order.base_panel_id = panels[0]
-
-                # Update cumulative length
-                cum_length += order.length
-                iterations -= 1
-            else:
-
-                # Assign order to base panel
-                order.base_panel_id = panels[panel_index]
-                cum_length = order.length
-                iterations -= 1
-
-                # Remove base panel from list
-                panels.pop(0)
-
-                if len(panels) == 0:
-                    break
-
-
-if __name__ == "__main__":
-    app.run(debug=True)  # only in testing environment
-
-"""
+GA()
