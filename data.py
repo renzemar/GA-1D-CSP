@@ -1,10 +1,12 @@
 import pandas as pd
 
+# Random testing data, not based on anything
 # objects = {4: 300, 6: 200, 3: 400, 5: 200, 2: 500, 1: 600, 12: 150, 10: 200, 8: 250, 7: 300, 9: 250, 11: 200, 13: 150,
 #           17: 200}
 
 # base_length = 17
 
+# Read the production data from alpha deuren
 df_orders = pd.read_excel('AlphaProductionData.xlsx')
 
 
