@@ -1,10 +1,21 @@
-import numpy as np
+from typing import List, Dict, Tuple, Any
 import random
-
 from data import objects, base_length
+import time
 
 
-def sanityCheck(population):
+def sanityCheck(population: list[List[List[int]]]) -> str:
+    """
+    This function checks the sanity of the given population. It checks if the sum of the patterns in each individual
+    equals the sum of the demand.
+
+    Parameters: population (list): A list of lists, where each inner list represents an individual in the population
+    and is a list of patterns. Each pattern is a list with the first element being the frequency and the remaining
+    elements being the demand for each object.
+
+    Returns:
+        bool: True if the sum of the patterns in each individual equals the sum of the demand, False otherwise.
+    """
     sanity = []
     total = 0
 
@@ -13,22 +24,19 @@ def sanityCheck(population):
             x = pattern[1:]
             total += sum(x) * pattern[0]
 
-        if total == 50:
+        sum_demand = sum(objects.values())
+
+        if total == sum_demand:
             sanity += ['True']
         else:
             sanity += [total]
 
         total = 0
 
-    total_demand = sum(objects.values())
-
-    if total_demand == sanity[0]:
-        return True
-    else:
-        return False
+    return str(sanity[0]) + " (total demand of " + str(sum_demand) + " is satisfied)"
 
 
-def subtract_lists(list1, list2):
+def subtract_lists(list1: List[int], list2: List[int]) -> List[int]:
     """
     This function subtracts the elements of arr2 from arr1, until the result is non negative. It returns a new list with
     the number of times arr2 was subtracted from arr1 as the first element, followed by the resulting list.
@@ -42,49 +50,80 @@ def subtract_lists(list1, list2):
         followed by the resulting list.
     """
     # Initialize the count of how many times list2 has been subtracted from list1
-    pattern_count = 1  # already substracted once from demand
+    pattern_count = 1  # already subtracted once from demand
 
     # Make sure the lists have the same length
     if len(list1) != len(list2):
         # print("Unequal lists")
         return None
 
-    # Subtract list2 from list1 until the result is non negative
+    # Subtract list2 from list1 until the result is non-negative
     while all(x - y >= 0 for x, y in zip(list1, list2)):
         list1 = [x - y for x, y in zip(list1, list2)]
         # print(f"{'list1 (demand) in loop'}: {list1}")
         pattern_count += 1
 
-        ## For some reason pattern with 0 items is allowed in the population
-
     # Create the result list and insert the pattern count as the first element
     result = list1
     result.insert(0, pattern_count)
 
-    print(f"{'list1 (demand) result'}: {list1}")
+    # print(f"{'list1 (demand) result'}: {list1}")
 
     return result
 
 
-def demand_length(sorted_objects):
+def demand_length(sorted_objects: Dict[int, int]) -> Tuple[List[int], List[int]]:
+    """
+    This function calculates the demand for each type of object and sorts the objects in descending order by length.
+
+    Parameters:
+    sorted_objects (dict): A dictionary containing the length of each object as the keys and the demand for each
+    object as the values.
+
+    Returns:
+        tuple: A tuple containing two lists, the first list is the demand for each type of object and the second list
+        is the length of each object sorted in descending order.
+    """
     # Calculate the demand for each type of object
     demand = list(sorted_objects.values())
 
     # Sort the objects in descending order by length
     length = list(sorted_objects.keys())
+    length.sort(reverse=True)
 
     return demand, length
 
 
-def sort_rer_one(objects):
+def sort_rer_one(objects: Dict[str, int]) -> Tuple[List[int], List[int]]:
+    """
+    This function sorts the given dictionary of objects by their values in descending order,
+    and returns two lists: one with the keys (demand) and one with the values (length).
+
+    Parameters:
+    objects (dict): A dictionary where the keys are strings and the values are integers.
+
+    Returns:
+        tuple: A tuple with two lists: one with the keys (demand) and one with the values (length).
+    """
+    # Sort the dictionary in descending order
     sorted_objects = dict(sorted(objects.items(), reverse=True))
 
+    # Get the demand and length lists from the sorted objects
     demand, length = demand_length(sorted_objects)
 
     return demand, length
 
 
-def sort_rer_two(objects):
+def sort_rer_two(objects: Dict[int, int]) -> Tuple[List[int], List[int]]:
+    """
+    This function shuffles a dictionary of objects randomly, and then returns the demand and length lists.
+
+    Parameters:
+    objects (dict): A dictionary of objects with the keys as the object IDs and the values as the lengths.
+
+    Returns:
+        tuple: A tuple containing the demand and length lists.
+    """
     # Shuffle the objects randomly
     l = list(objects.items())
     random.shuffle(l)
@@ -95,44 +134,83 @@ def sort_rer_two(objects):
     return demand, length
 
 
-def create_list_of_zeros(length):
+def create_list_of_zeros(length: int) -> List[int]:
+    """
+    This function creates a list of zeros with the specified length.
+
+    Parameters:
+        length (int): The length of the list to be created.
+
+    Returns:
+        list: A list of zeros with the specified length.
+    """
+
     empty_pattern = [0] * length
     return empty_pattern
 
 
-def calc_total_length(lengths, pattern):
+def calc_total_length(lengths: List[int], pattern: List[int]) -> int:
+    """
+    This function calculates the total length of a pattern by multiplying the lengths of each object in the pattern
+    by the number of times it appears.
+
+    Parameters:
+    lengths (list): A list of integers representing the lengths of each object in the pattern.
+    pattern (list): A list of integers representing the number of times each object appears in the pattern.
+
+    Returns:
+        int: The total length of the pattern.
+    """
     total_length = 0
 
     for i, val in enumerate(pattern):
-        # print(f"{'i'}: {i}")
-        # print(f"{'val'}: {val}")
         if i == 0:
             continue
-        # print(f"{'object i'}: {sorted_objects[i-1]}")
         total_length += lengths[i - 1] * val
-
-    # print(f"{'total length'}: {total_length}")
 
     return total_length
 
 
-def zip_individual(individual):
-    # Create a new list to store the sublists
+def zip_individual(individual: List[int]) -> List[List[int]]:
+    """
+    This function takes a list of integers and returns a list of sublists, each containing 5 elements from the
+    original list. If the original list has a length that is not a multiple of 5, the last sublist will contain fewer
+    than 5 elements.
+
+    Parameters:
+    individual (list): A list of integers to be divided into sublists of 5 elements each.
+
+    Returns:
+        list: A list of sublist, each containing 5 elements from the original list.
+    """
+    # Create a new list to store the sublist
     sublists = []
 
     # Iterate over the list with a step of 5
     for i in range(0, len(individual), 5):
         # Create a new sublist with the elements from i to i+5
         sublist = individual[i:i + 5]
-        # Append the sublist to the sublists list
+        # Append the sublist to the sublist list
         sublists.append(sublist)
 
-    # Print the resulting sublists
+    # Return the resulting sublist
     return sublists
 
 
-# Create pattern and return the length and demand in it's used sort order
-def create_pattern(objects, rer_one):
+def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], List[int]]:
+    """
+    This function creates a cutting pattern based on the demand and lengths of the given objects. The pattern is
+    sorted by the first sorting method if rer_one is True, and sorted by the second sorting method if rer_one is
+    False. The function returns a tuple containing the cutting pattern, the lengths of the objects, and the demand
+    for the objects.
+
+    Parameters: objects (List[Object]): A list of objects to create the cutting pattern for. rer_one (bool): A
+    boolean value indicating whether the first sorting method should be used (True) or the second sorting method (
+    False).
+
+    Returns: Tuple[List[int], List[int], List[int]]: A tuple containing the cutting pattern, the lengths of the
+    objects, and the demand for the objects.
+    """
     # If the first sorting method has already been used, sort the objects by demand
     if rer_one:
         demand, length = sort_rer_one(objects)
@@ -163,12 +241,26 @@ def create_pattern(objects, rer_one):
     return pattern, length, demand
 
 
-def patternCalculations(pattern, length, demand, restore):
+def patternCalculations(pattern: List[int], length: List[int], demand: List[int], restore: bool) -> Tuple[List[int],
+                                                                                                          List[int],
+                                                                                                          List[int]]:
+    """
+    This function applies a given pattern to the demand for objects of different lengths, as often as possible given
+    the demand. It also has the option to restore the pattern to its original sort order. Finally, it sets the first
+    element of the pattern to the remaining demand for the first object.
+
+    Parameters:
+    pattern (list): The list representing the pattern to be applied.
+    length (list): The list of lengths of the objects.
+    demand (list): The list of demands for the objects.
+    restore (bool): Flag to determine whether to restore the pattern to its original sort order.
+
+    Returns:
+        tuple: A tuple containing the updated pattern, length, and demand lists.
+    """
     # Apply pattern as often as possible given the demand
     length_requirements = pattern[1:]
-    # print(f"{'patternCalculations: length_requirements'}: {length_requirements}")
     demand = subtract_lists(demand, length_requirements)
-    # print(f"{'patternCalculations: demand'}: {demand}")
 
     # Restore pattern to original sort order
     if restore:
@@ -236,7 +328,18 @@ def create_individual(objects, base_length):
     return individual
 
 
-def create_initial_population(objects, base_length, POPULATION_SIZE):
+def create_initial_population(objects: List[Any], base_length: int, POPULATION_SIZE: int) -> List[List[Any]]:
+    """
+    This function generates a list of randomly generated individuals, with a given base length and number of objects.
+
+    Parameters:
+        objects (list): The list of objects to use for generating the individuals.
+        base_length (int): The base length for each individual.
+        POPULATION_SIZE (int): The size of the population to generate.
+
+    Returns:
+        list: A list of randomly generated individuals.
+    """
     population = []
 
     for i in range(POPULATION_SIZE):
@@ -246,8 +349,18 @@ def create_initial_population(objects, base_length, POPULATION_SIZE):
     return population
 
 
-# fitness calculation
 def patternsWaste(individual):
+    """
+    This function calculates the total waste for a given list of patterns. The waste is calculated
+    by subtracting the total length of all patterns in the list from the base length of the patterns.
+    The base length is the first element in each list in the list of patterns.
+
+    Parameters:
+    individual (list): A list of patterns. Each pattern is represented as a list of integers.
+
+    Returns:
+        tuple: A tuple containing the total waste as the only element.
+    """
     lengths = list(objects.keys())
     # zipped_individual = zip_individual(individual)
     waste_total = 0
@@ -261,7 +374,38 @@ def patternsWaste(individual):
     return waste_total,  # return a tuple
 
 
-def createOffspring(ind1, ind2):
+def baseLengthsAmount(individual):
+    """
+    This function calculates the total length of the base patterns in an individual.
+    The base pattern is the first element in each list in the list of patterns.
+
+    Parameters:
+    individual (list): A list containing the patterns of the individual.
+
+    Returns:
+        tuple: A tuple containing the total length of the base patterns.
+    """
+    baseLengths_total = 0
+    for pattern in individual[0]:
+        if pattern:  # make sure the list is not empty
+            baseLengths_total += pattern[0]
+
+    return baseLengths_total,  # return a tuple
+
+
+def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[int]]:
+    """
+    This function creates offspring patterns by combining patterns from two individual patterns, using a random selection
+    process. It also applies the selected patterns to the demand for objects of different lengths, as often as possible.
+    The function has the ability to switch between the two individuals during the selection process.
+
+    Parameters:
+    ind1 (list): The first individual pattern to be used in the offspring creation.
+    ind2 (list): The second individual pattern to be used in the offspring creation.
+
+    Returns:
+        list: A list of the offspring patterns created.
+    """
     # print(f"{'ind1'}: {ind1}")
     # print(f"{'ind2'}: {ind2}")
 
@@ -324,7 +468,7 @@ def createOffspring(ind1, ind2):
             # print("running RER1")
 
             # Set the length to create a dictionary with the residual demand
-            lengths = list(objects.keys())
+            length = list(objects.keys())
 
             # Update the objects dictionary with the remaining demand
             objects2 = dict(zip(length, demand))
@@ -344,3 +488,42 @@ def createOffspring(ind1, ind2):
             # print(f"{'pattern'}: {pattern}")
 
     return offspring
+
+
+def sum_baseLength(ind: List[List[int]]) -> int:
+    """
+    This function calculates the total amount of the base lengths used in a list of patterns.
+    The base length is the first element in each list in the list of patterns.
+
+    Parameters:
+    ind (list): A list of patterns.
+
+    Returns:
+        int: The total length of the base patterns.
+    """
+    total = 0
+    for pattern in ind:
+        if pattern:  # make sure the list is not empty
+            total += pattern[0]
+    return total
+
+
+def measure_time(func):
+    """
+    This is a decorator function that measures and prints the execution time of the decorated function.
+
+    Parameters:
+    func (function): The function to be decorated.
+
+    Returns:
+        function: The decorated function.
+    """
+
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        print(f'Finished {func.__name__} in {end_time - start_time:.6f} seconds')
+        return result
+
+    return wrapper
