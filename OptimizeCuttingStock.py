@@ -12,9 +12,9 @@ import time
 from data import objects, base_length
 
 # Genetic Algorithm constants:
-POPULATION_SIZE = 100  # The size of the population of individuals
-P_CROSSOVER = 0.7  # probability for crossover
-MAX_GENERATIONS = 10  # The maximum number of generations
+POPULATION_SIZE = 50  # The size of the population of individuals
+P_CROSSOVER = 0.9  # probability for crossover
+MAX_GENERATIONS = 35  # The maximum number of generations
 HALL_OF_FAME_SIZE = 1  # The size of the hall of fame   
 
 # Create the "FitnessMin" fitness class using the base Fitness class

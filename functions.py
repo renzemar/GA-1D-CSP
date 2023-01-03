@@ -428,7 +428,7 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
     # Start with parent to be individual 1
     parent = individual1
 
-    while sum(demand) > 0 and (individual1 or individual2):
+    while sum(demand) > 0:
 
         # print(f"{'begin of iteration demand'}: {demand}")
 
@@ -446,9 +446,15 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
             # Remove initial pattern from demand
             demand_copy = demand.copy()
             demand_copy = [x - y for x, y in zip(demand_copy, gene[1:])]
-            if all(n > 0 for n in demand_copy):
+            if all(n >= 0 for n in demand_copy):
                 demand = demand_copy.copy()
             else:
+
+                if parent == individual1 and individual2:
+                    parent = individual2
+                elif parent == individual2 and individual1:
+                    parent = individual1
+
                 continue
 
             # print(f"{'demand after initial removal of pattern'}: {demand}")
@@ -461,14 +467,10 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
             offspring.append(pattern)
             # print(f"{'pattern after recalculation'}: {pattern}")
 
-            # Generate a random integer between 0 and 1
-            random_int = random.randint(0, 1)
-
-            # Include a check on whether the individuals are not empty
-            if random_int == 0 and individual1:
-                parent = individual1
-            elif random_int == 1 and individual2:
+            if parent == individual1 and individual2:
                 parent = individual2
+            elif parent == individual2 and individual1:
+                parent = individual1
 
         else:
 
@@ -485,9 +487,6 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
 
             # Set the pattern cutting times, and return length and demand in original order
             pattern, length, demand = patternCalculations(pattern, length, demand, restore=True)
-
-            # Reinitialize the objects2 to match original order
-            objects2 = dict(zip(length, demand))
 
             # Add the current pattern to the list of cutting patterns
             offspring.append(pattern)

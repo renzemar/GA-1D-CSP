@@ -11,7 +11,7 @@ df_orders = pd.read_excel('AlphaProductionData.xlsx')
 def create_dict(df):
 
     # df = df.iloc[:int(len(df) / 12)]
-    # df = df.iloc[:int(len(df) / 6)]
+    df = df.iloc[:int(len(df) / 6)]
     # df = df.iloc[:int(len(df) / 2)]
 
 
