@@ -12,9 +12,9 @@ import time
 from data import objects, base_length
 
 # Genetic Algorithm constants:
-POPULATION_SIZE = 50  # The size of the population of individuals
-P_CROSSOVER = 0.9  # probability for crossover
-MAX_GENERATIONS = 3  # The maximum number of generations
+POPULATION_SIZE = 100  # The size of the population of individuals
+P_CROSSOVER = 0.7  # probability for crossover
+MAX_GENERATIONS = 10  # The maximum number of generations
 HALL_OF_FAME_SIZE = 1  # The size of the hall of fame   
 
 # Create the "FitnessMin" fitness class using the base Fitness class
@@ -31,11 +31,11 @@ toolbox = base.Toolbox()
 # Register the "individualFunction" function in the toolbox
 # This function creates an individual by calling the "create_individual" function from the "functions" module
 # It takes in the "objects" and "base_length" data as arguments
-toolbox.register('individualFunction', functions.create_individual, objects, base_length)
+toolbox.register('individualFunction', functions.create_individual, objects)
 
 # Register the "individualCreator" function in the toolbox This function creates an individual by calling the
 # "individualFunction" and using the "initRepeat" function from the "tools" module The created individual is
-# initialized with the "Individual" class and has a length of 1
+# initialized with the "Individual" class and is repeated once
 toolbox.register("individualCreator", tools.initRepeat, creator.Individual, toolbox.individualFunction, 1)
 
 # Register the "population" function in the toolbox This function creates a population of individuals by calling the

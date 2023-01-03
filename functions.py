@@ -129,7 +129,11 @@ def sort_rer_two(objects: Dict[int, int]) -> Tuple[List[int], List[int]]:
     random.shuffle(l)
     shuffled_objects = dict(l)
 
-    demand, length = demand_length(shuffled_objects)
+    # Calculate the demand for each type of object
+    demand = list(shuffled_objects.values())
+
+    # Sort the objects in descending order by length
+    length = list(shuffled_objects.keys())
 
     return demand, length
 
@@ -278,7 +282,11 @@ def patternCalculations(pattern: List[int], length: List[int], demand: List[int]
     return pattern, length, demand
 
 
-def create_individual(objects, base_length):
+# Only use rer_one for the first individual
+rer_one = True
+
+
+def create_individual(objects):
     """
     Create a cutting pattern for a given set of objects and base length.
 
@@ -300,11 +308,10 @@ def create_individual(objects, base_length):
     individual = []
 
     # Initialize the flag to use the first sorting method
-    rer_one = True
+    global rer_one
 
     # Loop until all objects have been cut
     while sum(demand) > 0:
-
         # Create pattern and return the length and demand in it's used sort order
         pattern, length, demand = create_pattern(objects2, rer_one)
 
@@ -317,9 +324,9 @@ def create_individual(objects, base_length):
         # Add the current pattern to the list of cutting patterns
         individual.append(pattern)
 
-        # Toggle the flag to use the other sorting method in the next iteration
-        if rer_one:
-            rer_one = False
+    # Toggle the flag to use the other sorting method in the next iteration
+    if rer_one:
+        rer_one = False
 
     # Flatten the individual into one list
     # individual = [val for sublist in individual for val in sublist]
@@ -421,7 +428,7 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
     # Start with parent to be individual 1
     parent = individual1
 
-    while sum(demand) > 0:
+    while sum(demand) > 0 and (individual1 or individual2):
 
         # print(f"{'begin of iteration demand'}: {demand}")
 
@@ -458,9 +465,9 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
             random_int = random.randint(0, 1)
 
             # Include a check on whether the individuals are not empty
-            if random_int == 0:
+            if random_int == 0 and individual1:
                 parent = individual1
-            else:
+            elif random_int == 1 and individual2:
                 parent = individual2
 
         else:
