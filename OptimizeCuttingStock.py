@@ -9,12 +9,18 @@ import functions
 import time
 
 # Import the test data
-from data import objects, base_length
+from data import objects
+
+# THIS IS FOR TESTING PURPOSES ON SUBSETS#
+""""Use this code to test on subsets of the data. The name of the subset is the same as the name of the material. 
+In practise, the subset is the material that is currently being cut. No mixing of materials is allowed."""
+
+# END OF SUBSET TESTING CODE #
 
 # Genetic Algorithm constants:
-POPULATION_SIZE = 50  # The size of the population of individuals
+POPULATION_SIZE = 75  # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
-MAX_GENERATIONS = 35  # The maximum number of generations
+MAX_GENERATIONS = 40  # The maximum number of generations
 HALL_OF_FAME_SIZE = 1  # The size of the hall of fame   
 
 # Create the "FitnessMin" fitness class using the base Fitness class
