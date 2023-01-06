@@ -1,6 +1,6 @@
 from typing import List, Dict, Tuple, Any
 import random
-from data import objects, base_length
+from data import objects, base_length, objects_uncut, basePanels
 import time
 
 
@@ -16,7 +16,7 @@ def sanityCheck(population: list[List[List[int]]]) -> str:
     Returns:
         bool: True if the sum of the patterns in each individual equals the sum of the demand, False otherwise.
     """
-    sanity = []
+    sanity = False
     total = 0
 
     for individual in population:
@@ -27,13 +27,9 @@ def sanityCheck(population: list[List[List[int]]]) -> str:
         sum_demand = sum(objects.values())
 
         if total == sum_demand:
-            sanity += ['True']
-        else:
-            sanity += [total]
+            sanity = True
 
-        total = 0
-
-    return str(sanity[0]) + " (total demand of " + str(sum_demand) + " is satisfied)"
+    return sanity
 
 
 def subtract_lists(list1: List[int], list2: List[int]) -> List[int]:
@@ -331,6 +327,11 @@ def create_individual(objects):
     # Flatten the individual into one list
     # individual = [val for sublist in individual for val in sublist]
 
+    # Sanity check
+    sanity = sanityCheck([individual])
+    if not sanity:
+        print('False offspring created')
+
     # Return the individual
     return individual
 
@@ -493,6 +494,12 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
 
             # print(f"{'pattern'}: {pattern}")
 
+    # Sanity check
+    sanity = sanityCheck([offspring])
+
+    if not sanity:
+        print('False offspring created')
+
     return offspring
 
 
@@ -533,3 +540,18 @@ def measure_time(func):
         return result
 
     return wrapper
+
+
+"""    
+    global basePanels
+
+    # Check if enough base panels are to be cut
+    for i in range(pattern_count):
+        if basePanels - 1 >= 0:
+            basePanels -= 1
+            pattern_count -= 1
+        else:
+            # Add remaining demand to uncut list
+            for i in pattern_count:
+                objects_uncut[i] += list1[i]
+"""

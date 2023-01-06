@@ -20,7 +20,7 @@ In practise, the subset is the material that is currently being cut. No mixing o
 # Genetic Algorithm constants:
 POPULATION_SIZE = 75  # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
-MAX_GENERATIONS = 40  # The maximum number of generations
+MAX_GENERATIONS = 30  # The maximum number of generations
 HALL_OF_FAME_SIZE = 1  # The size of the hall of fame   
 
 # Create the "FitnessMin" fitness class using the base Fitness class
@@ -73,6 +73,13 @@ def crossoverFunction(ind1, ind2):
 
         offsprings.append(offspring_individual)
 
+        # Sanity check
+        sanity = functions.sanityCheck(offspring_individual)
+
+        if not sanity:
+            print('False offspring created')
+
+
     return offsprings[0], offsprings[1]
 
 
@@ -116,6 +123,14 @@ def GA():
     # Print the best solution found
     best = hof.items[0]
 
+    sanity = functions.sanityCheck(best)
+
+    # Perform again if solution is invalid, this is a temporary fix
+    if not sanity:
+        print('Invalid solution found, performing again')
+        GA()
+        return None
+
     # Define the best individuals' characteristics
     nr_of_bases = functions.sum_baseLength(best[0])
     nr_of_patters = len(best[0])
@@ -126,7 +141,7 @@ def GA():
     print("-- Waste of Individual = ", functions.patternsWaste(best))
     print("-- Number of Base Lengths = ", nr_of_bases)
     print("-- Number of Patterns = ", nr_of_patters)
-    print("-- Sanity Check of Individual = ", functions.sanityCheck(best))
+    print("-- Sanity Check of Individual = ", sanity)
 
     # Extract the statistics
     maxFitnessValues, meanFitnessValues = logbook.select("max", "avg")
@@ -142,3 +157,4 @@ def GA():
 
 
 GA()
+

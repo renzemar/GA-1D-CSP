@@ -19,13 +19,13 @@ def create_tables():
     db.create_all()
 
 
-#@app.before_request
-#def create_tables():
+# @app.before_request
+# def create_tables():
 #    db.drop_all()
 #    db.create_all()
 
 
-### MODELS ###
+# MODELS #
 
 class RootOrder(db.Model):
     __tablename__ = 'root_order'
@@ -74,7 +74,7 @@ class Order(db.Model):
         return f"{self.id}, {self.length}"
 
 
-### SCHEMAS ###
+# SCHEMAS #
 
 
 # Custom validator
@@ -161,7 +161,8 @@ def add_base_panels():
     for base_panel in data['base_panels']:
         duplicate = BasePanel.query.filter_by(id=data['id']).first()
         if not duplicate:
-            base_panel = BasePanel(id=base_panel['id'], length=base_panel['length'], root_base_panel_id=root_base_panel.id)
+            base_panel = BasePanel(id=base_panel['id'], length=base_panel['length'],
+                                   root_base_panel_id=root_base_panel.id)
             db.session.add(base_panel)
     db.session.commit()
     result = root_base_panel_schema.dump(root_base_panel.query.get(root_base_panel.id))
@@ -314,4 +315,3 @@ def find_or_create_order(data):
 
 if __name__ == "__main__":
     app.run(debug=True)  # only in testing environment
-
