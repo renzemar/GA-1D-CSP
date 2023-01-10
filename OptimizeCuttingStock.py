@@ -9,7 +9,7 @@ import functions
 import time
 
 # Import the test data
-from data import objects
+from data import objects, basePanels
 
 # THIS IS FOR TESTING PURPOSES ON SUBSETS#
 """"Use this code to test on subsets of the data. The name of the subset is the same as the name of the material. 
@@ -75,10 +75,10 @@ def crossoverFunction(ind1, ind2):
 
         # Sanity check
         sanity = functions.sanityCheck(offspring_individual)
+        nr_of_bases = functions.sum_baseLength(offspring_individual[0])
 
-        if not sanity:
+        if not sanity and nr_of_bases < basePanels:
             print('False offspring created')
-
 
     return offsprings[0], offsprings[1]
 
@@ -123,17 +123,18 @@ def GA():
     # Print the best solution found
     best = hof.items[0]
 
-    sanity = functions.sanityCheck(best)
-
-    # Perform again if solution is invalid, this is a temporary fix
-    if not sanity:
-        print('Invalid solution found, performing again')
-        GA()
-        return None
-
     # Define the best individuals' characteristics
     nr_of_bases = functions.sum_baseLength(best[0])
     nr_of_patters = len(best[0])
+
+    sanity = functions.sanityCheck(best)
+
+    # Perform again if solution is invalid, this is a temporary fix
+    if not sanity and nr_of_bases < basePanels:
+        print("-- Best Ever Individual = ", best)
+        print('Invalid solution found, performing again')
+        GA()
+        return None
 
     # Print the best individual's characteristics
     print("-- Best Ever Individual = ", best)

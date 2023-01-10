@@ -1,6 +1,6 @@
 from typing import List, Dict, Tuple, Any
 import random
-from data import objects, base_length, objects_uncut, basePanels
+from data import objects, base_length, objects_uncut
 import time
 
 
@@ -224,7 +224,8 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
     for j in range(len(length)):
         # Check if the current object fits in the pattern
         times_cut = 0
-        while (calc_total_length(length, pattern) + length[j] <= base_length) and sum(demand) > 0:
+        while (calc_total_length(length, pattern) + length[j] <= base_length) and sum(
+                demand) > 0:
 
             # Check if there is still demand for the current object
             if demand[j] > 0:
