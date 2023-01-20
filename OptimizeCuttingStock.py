@@ -21,7 +21,7 @@ In practise, the subset is the material that is currently being cut. No mixing o
 POPULATION_SIZE = 75  # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
 MAX_GENERATIONS = 30  # The maximum number of generations
-HALL_OF_FAME_SIZE = 1  # The size of the hall of fame   
+HALL_OF_FAME_SIZE = 20  # The size of the hall of fame
 
 # Create the "FitnessMin" fitness class using the base Fitness class
 # Weights are set to -1.0 because we want to minimize the fitness function
@@ -121,25 +121,49 @@ def GA():
                                               ngen=MAX_GENERATIONS, stats=stats, halloffame=hof, verbose=True)
 
     # Print the best solution found
-    best = hof.items[0]
+
+    best = None
+
+    for solution in hof.items:
+        sanity = functions.sanityCheck(solution)
+
+        if sanity:
+            best = solution
+            print('Valid solution found')
+            break
+        else:
+            print('Invalid solution found')
+
+    if best is None:
+        print('No valid solution found')
+        return
 
     # Define the best individuals' characteristics
     nr_of_bases = functions.sum_baseLength(best[0])
     nr_of_patters = len(best[0])
 
-    sanity = functions.sanityCheck(best)
+    # Use this for when using fitness function of minimal waste
+    #waste = functions.patternsWaste(best)
+    #base_panel_material = nr_of_bases * 12450
+    #material_used = waste[0] + base_panel_material
+
+    # Use this for when using fitness function of minimal waste
+    material_used = functions.patternsWaste(best)
+    base_panel_material = nr_of_bases * 12450
+    waste = material_used[0] - base_panel_material
 
     # Perform again if solution is invalid, this is a temporary fix
-    if not sanity and nr_of_bases < basePanels:
-        print("-- Best Ever Individual = ", best)
-        print('Invalid solution found, performing again')
-        GA()
-        return None
+    # if not sanity and nr_of_bases < basePanels:
+    #    print("-- Best Ever Individual = ", best)
+    #    print('Invalid solution found, performing again')
+    #    GA()
+    #    return None
 
     # Print the best individual's characteristics
     print("-- Best Ever Individual = ", best)
     print("-- Best Ever Fitness = ", best.fitness.values[0])
-    print("-- Waste of Individual = ", functions.patternsWaste(best))
+    print("-- Total Waste = ", waste)
+    print("-- Total Material Used = ", material_used)
     print("-- Number of Base Lengths = ", nr_of_bases)
     print("-- Number of Patterns = ", nr_of_patters)
     print("-- Sanity Check of Individual = ", sanity)

@@ -29,6 +29,11 @@ def sanityCheck(population: list[List[List[int]]]) -> str:
         if total == sum_demand:
             sanity = True
 
+    #if not sanity:
+    #    print("Sanity check failed")
+    #else:
+    #    print("Sanity check passed")
+
     return sanity
 
 
@@ -222,6 +227,21 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
 
     # Construct the cutting pattern
     for j in range(len(length)):
+
+        current_length = length[j]
+        length_remaining = 12450 - calc_total_length(length, pattern)
+
+        # Add a max times that the item can be cut
+        remaining_space = length_remaining / current_length
+
+        # Get a random percentage of the remaining space
+        random_percentage = random.randint(0, 100) / 100
+        # Calculate the number of times item j can be cut from remaining space
+        max_times = round(remaining_space / current_length)
+        # Get the random percentage from the remaining space
+
+
+
         # Check if the current object fits in the pattern
         times_cut = 0
         while (calc_total_length(length, pattern) + length[j] <= base_length) and sum(
@@ -379,6 +399,9 @@ def patternsWaste(individual):
         waste = base_length - total_length
         # print(f"{'waste'}: {waste}")
         waste_total += waste
+
+    material_used = sum_baseLength(individual[0]) * 12450
+    waste_total += material_used
 
     return waste_total,  # return a tuple
 
