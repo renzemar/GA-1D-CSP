@@ -5,11 +5,12 @@ from deap import algorithms
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-import functions
+import functions_GA
+import functions_dataprep
 import time
 
 # Import the test data
-from data import objects, basePanels
+from data import objects, basePanels, lookup, subset_index, df_orders
 
 # THIS IS FOR TESTING PURPOSES ON SUBSETS#
 """"Use this code to test on subsets of the data. The name of the subset is the same as the name of the material. 
@@ -20,8 +21,8 @@ In practise, the subset is the material that is currently being cut. No mixing o
 # Genetic Algorithm constants:
 POPULATION_SIZE = 75  # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
-MAX_GENERATIONS = 30  # The maximum number of generations
-HALL_OF_FAME_SIZE = 20  # The size of the hall of fame
+MAX_GENERATIONS = 50  # The maximum number of generations
+HALL_OF_FAME_SIZE = 10  # The size of the hall of fame
 
 # Create the "FitnessMin" fitness class using the base Fitness class
 # Weights are set to -1.0 because we want to minimize the fitness function
@@ -37,7 +38,7 @@ toolbox = base.Toolbox()
 # Register the "individualFunction" function in the toolbox
 # This function creates an individual by calling the "create_individual" function from the "functions" module
 # It takes in the "objects" and "base_length" data as arguments
-toolbox.register('individualFunction', functions.create_individual, objects)
+toolbox.register('individualFunction', functions_GA.create_individual, objects)
 
 # Register the "individualCreator" function in the toolbox This function creates an individual by calling the
 # "individualFunction" and using the "initRepeat" function from the "tools" module The created individual is
@@ -66,7 +67,7 @@ def crossoverFunction(ind1, ind2):
     offsprings = []
 
     while len(offsprings) < 2:
-        offspring = functions.createOffspring(ind1[0], ind2[0])
+        offspring = functions_GA.createOffspring(ind1[0], ind2[0])
 
         # create a new Individual object and set its fitness attribute
         offspring_individual = creator.Individual([offspring])
@@ -74,8 +75,8 @@ def crossoverFunction(ind1, ind2):
         offsprings.append(offspring_individual)
 
         # Sanity check
-        sanity = functions.sanityCheck(offspring_individual)
-        nr_of_bases = functions.sum_baseLength(offspring_individual[0])
+        sanity = functions_GA.sanityCheck(offspring_individual)
+        nr_of_bases = functions_GA.sum_baseLength(offspring_individual[0])
 
         if not sanity and nr_of_bases < basePanels:
             print('False offspring created')
@@ -84,7 +85,8 @@ def crossoverFunction(ind1, ind2):
 
 
 # registering the fitness function
-toolbox.register("evaluate", functions.patternsWaste)
+toolbox.register("evaluate", functions_GA.patternsWaste)
+
 
 # Roulette selection
 toolbox.register("select", tools.selRoulette)
@@ -93,7 +95,7 @@ toolbox.register("select", tools.selRoulette)
 toolbox.register("mate", crossoverFunction)
 
 
-@functions.measure_time
+@functions_GA.measure_time
 def GA():
     """
     This is the main Genetic Algorithm function which performs the flow of the algorithm and plots the statistics of the
@@ -125,7 +127,7 @@ def GA():
     best = None
 
     for solution in hof.items:
-        sanity = functions.sanityCheck(solution)
+        sanity = functions_GA.sanityCheck(solution)
 
         if sanity:
             best = solution
@@ -139,18 +141,18 @@ def GA():
         return
 
     # Define the best individuals' characteristics
-    nr_of_bases = functions.sum_baseLength(best[0])
+    nr_of_bases = functions_GA.sum_baseLength(best[0])
     nr_of_patters = len(best[0])
 
     # Use this for when using fitness function of minimal waste
-    #waste = functions.patternsWaste(best)
-    #base_panel_material = nr_of_bases * 12450
-    #material_used = waste[0] + base_panel_material
+    waste = functions_GA.patternsWaste(best)
+    base_panel_material = nr_of_bases * 12450
+    material_used = waste[0] + base_panel_material
 
     # Use this for when using fitness function of minimal waste
-    material_used = functions.patternsWaste(best)
-    base_panel_material = nr_of_bases * 12450
-    waste = material_used[0] - base_panel_material
+    # material_used = functions.patternsWaste(best)
+    # base_panel_material = nr_of_bases * 12450
+    # waste = material_used[0] - base_panel_material
 
     # Perform again if solution is invalid, this is a temporary fix
     # if not sanity and nr_of_bases < basePanels:
@@ -167,6 +169,7 @@ def GA():
     print("-- Number of Base Lengths = ", nr_of_bases)
     print("-- Number of Patterns = ", nr_of_patters)
     print("-- Sanity Check of Individual = ", sanity)
+    print(functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0]))
 
     # Extract the statistics
     maxFitnessValues, meanFitnessValues = logbook.select("max", "avg")

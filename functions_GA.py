@@ -1,15 +1,19 @@
 from typing import List, Dict, Tuple, Any
 import random
-from data import objects, base_length, objects_uncut
+from data import objects, base_length
 import time
+import math
 
+
+# Main functions for the Genetic Algorithm
+# Used in the GA_CSP file
 
 def sanityCheck(population: list[List[List[int]]]) -> str:
     """
     This function checks the sanity of the given population. It checks if the sum of the patterns in each individual
     equals the sum of the demand.
 
-    Parameters: population (list): A list of lists, where each inner list represents an individual in the population
+    Param: population (list): A list of lists, where each inner list represents an individual in the population
     and is a list of patterns. Each pattern is a list with the first element being the frequency and the remaining
     elements being the demand for each object.
 
@@ -29,9 +33,9 @@ def sanityCheck(population: list[List[List[int]]]) -> str:
         if total == sum_demand:
             sanity = True
 
-    #if not sanity:
+    # if not sanity:
     #    print("Sanity check failed")
-    #else:
+    # else:
     #    print("Sanity check passed")
 
     return sanity
@@ -225,27 +229,33 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
     # Create an empty population
     pattern = create_list_of_zeros(len(objects) + 1)
 
+    max_times = 9999999
+
+    if not rer_one:
+
+        current_length = length[0]
+
+        # calculate the number of times the base length can be added to the pattern
+        max_count = math.floor(base_length / current_length)
+        # calculate the remaining length after adding the base length to the pattern
+        remaining = base_length - (max_count * current_length)
+
+        if remaining < (0.025 * base_length):
+            max_times = max_count
+        else:
+            # Get a random percentage of the remaining space
+            random_percentage = random.randint(10, 100) / 100
+            length_remaining = 12450 - (random_percentage * current_length)
+            # Calculate the number of times item j can be cut from remaining space
+            max_times = round(length_remaining / current_length)
+
     # Construct the cutting pattern
     for j in range(len(length)):
-
-        current_length = length[j]
-        length_remaining = 12450 - calc_total_length(length, pattern)
-
-        # Add a max times that the item can be cut
-        remaining_space = length_remaining / current_length
-
-        # Get a random percentage of the remaining space
-        random_percentage = random.randint(0, 100) / 100
-        # Calculate the number of times item j can be cut from remaining space
-        max_times = round(remaining_space / current_length)
-        # Get the random percentage from the remaining space
-
-
 
         # Check if the current object fits in the pattern
         times_cut = 0
         while (calc_total_length(length, pattern) + length[j] <= base_length) and sum(
-                demand) > 0:
+                demand) > 0 and max_times > times_cut:
 
             # Check if there is still demand for the current object
             if demand[j] > 0:
@@ -259,12 +269,15 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
             # Increment the count of how many times the current object has been cut
             pattern[(j + 1)] = times_cut
 
+            # Decrement the max times the object can be cut
+            max_times -= 1
+
     return pattern, length, demand
 
 
 def patternCalculations(pattern: List[int], length: List[int], demand: List[int], restore: bool) -> Tuple[List[int],
-                                                                                                          List[int],
-                                                                                                          List[int]]:
+List[int],
+List[int]]:
     """
     This function applies a given pattern to the demand for objects of different lengths, as often as possible given
     the demand. It also has the option to restore the pattern to its original sort order. Finally, it sets the first
@@ -400,8 +413,8 @@ def patternsWaste(individual):
         # print(f"{'waste'}: {waste}")
         waste_total += waste
 
-    material_used = sum_baseLength(individual[0]) * 12450
-    waste_total += material_used
+    # material_used = sum_baseLength(individual[0]) * 12450
+    # waste_total += material_used
 
     return waste_total,  # return a tuple
 
@@ -564,18 +577,3 @@ def measure_time(func):
         return result
 
     return wrapper
-
-
-"""    
-    global basePanels
-
-    # Check if enough base panels are to be cut
-    for i in range(pattern_count):
-        if basePanels - 1 >= 0:
-            basePanels -= 1
-            pattern_count -= 1
-        else:
-            # Add remaining demand to uncut list
-            for i in pattern_count:
-                objects_uncut[i] += list1[i]
-"""
