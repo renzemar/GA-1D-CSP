@@ -6,7 +6,7 @@ df_orders = pd.read_excel('AlphaProductionData.xlsx')
 materials = df_orders['MateriaalPaneelTxt'].unique()
 
 # Change the index to get the different subsets
-subset_index = 14
+subset_index = 19  # set 14 and 19 are large subsets
 
 subsets = functions_dataprep.panel_count(df_orders)
 dict_subsets = functions_dataprep.create_subsets(df_orders, subsets)

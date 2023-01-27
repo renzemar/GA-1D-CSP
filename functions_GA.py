@@ -89,12 +89,11 @@ def demand_length(sorted_objects: Dict[int, int]) -> Tuple[List[int], List[int]]
         tuple: A tuple containing two lists, the first list is the demand for each type of object and the second list
         is the length of each object sorted in descending order.
     """
-    # Calculate the demand for each type of object
+    # Retrieve the demand for each type of object
     demand = list(sorted_objects.values())
 
     # Sort the objects in descending order by length
     length = list(sorted_objects.keys())
-    length.sort(reverse=True)
 
     return demand, length
 
@@ -177,6 +176,9 @@ def calc_total_length(lengths: List[int], pattern: List[int]) -> int:
             continue
         total_length += lengths[i - 1] * val
 
+        if total_length > base_length or total_length < 0:
+            print("Pattern invalid: ", total_length)
+
     return total_length
 
 
@@ -220,7 +222,7 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
     Returns: Tuple[List[int], List[int], List[int]]: A tuple containing the cutting pattern, the lengths of the
     objects, and the demand for the objects.
     """
-    # If the first sorting method has already been used, sort the objects by demand
+    # If the first sorting method has already been used, sort the objects by randomly shuffling them
     if rer_one:
         demand, length = sort_rer_one(objects)
     elif not rer_one:
@@ -229,8 +231,9 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
     # Create an empty population
     pattern = create_list_of_zeros(len(objects) + 1)
 
-    max_times = 9999999
+    max_times = 9999999  # temp solution
 
+    # For rer two, we set the max number of times an object can appear in the pattern based on a random percentage
     if not rer_one:
 
         current_length = length[0]
@@ -245,9 +248,12 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
         else:
             # Get a random percentage of the remaining space
             random_percentage = random.randint(10, 100) / 100
-            length_remaining = 12450 - (random_percentage * current_length)
+            length_remaining = base_length - (random_percentage * base_length)
             # Calculate the number of times item j can be cut from remaining space
             max_times = round(length_remaining / current_length)
+
+            if max_times <= 0:
+                max_times = 1
 
     # Construct the cutting pattern
     for j in range(len(length)):
@@ -296,14 +302,35 @@ List[int]]:
     length_requirements = pattern[1:]
     demand = subtract_lists(demand, length_requirements)
 
-    # Restore pattern to original sort order
+    # Update the objects dictionary with the remaining demand
+    objects2 = dict(zip(length, demand))
+
+    # Restore pattern, length to original sort order
     if restore:
+
         pattern_dict = dict(zip(length, length_requirements))
         pattern_dict_sorted = dict(map(lambda k: (k, pattern_dict[k]), objects.keys()))
+
         pattern = list(pattern_dict_sorted.values())
 
         # Insert a zero at the beginning of the pattern
         pattern.insert(0, 0)
+
+        # Set the first element of the pattern to the remaining demand for the first object
+        pattern[0] = demand[0]
+        demand.pop(0)
+
+        demand_dict = dict(zip(length, demand))
+        demand_dict_sorted = dict(map(lambda k: (k, demand_dict[k]), objects.keys()))
+
+        demand = list(demand_dict_sorted.values())
+        length = list(demand_dict_sorted.keys())
+
+        pattern_length = calc_total_length(length, pattern)
+        if pattern_length > base_length:
+            print("Pattern invalid at calculation: ", pattern)
+
+        return pattern, length, demand
 
     # Set the first element of the pattern to the remaining demand for the first object
     pattern[0] = demand[0]
@@ -391,7 +418,48 @@ def create_initial_population(objects: List[Any], base_length: int, POPULATION_S
     return population
 
 
-def patternsWaste(individual):
+def patternWaste(pattern, lengths):
+    """
+    This function calculates the waste for a given pattern.
+
+    Parameters:
+        pattern (list): The list representing the pattern to be applied.
+
+    Returns:
+        int: The waste for the given pattern.
+        :param lengths: list of lengths of objects
+    """
+    # Calculate the total length of the pattern
+    total_length = calc_total_length(lengths, pattern)
+
+    # Calculate the waste
+    waste = base_length - total_length
+
+    return waste
+
+
+def findMinimalWastePattern(individual, lengths):
+    """
+    This function finds the pattern with the minimal waste.
+
+    Parameters:
+        patterns (list): The list of patterns to be evaluated.
+
+    Returns:
+        list: The pattern with the minimal waste.
+        :param lengths: list of lengths of objects
+        :param individual: list of patterns
+    """
+    # Initialize the minimal waste to a large value
+    min_waste_index = 0
+    for i in range(len(individual)):
+        if patternWaste(individual[i], lengths) < patternWaste(individual[min_waste_index], lengths):
+            min_waste_index = i
+
+    return individual[min_waste_index]
+
+
+def individualWaste(individual):
     """
     This function calculates the total waste for a given list of patterns. The waste is calculated
     by subtracting the total length of all patterns in the list from the base length of the patterns.
@@ -408,13 +476,11 @@ def patternsWaste(individual):
     waste_total = 0
 
     for pattern in individual[0]:
-        total_length = calc_total_length(lengths, pattern)
-        waste = base_length - total_length
-        # print(f"{'waste'}: {waste}")
-        waste_total += waste
+        waste_total += patternWaste(pattern, lengths)
 
-    # material_used = sum_baseLength(individual[0]) * 12450
-    # waste_total += material_used
+    # below is a different way to measure fitness, namely the total material used to cut all objects
+    material_used = sum_baseLength(individual[0]) * 12450
+    waste_total += material_used
 
     return waste_total,  # return a tuple
 
@@ -474,8 +540,15 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
         if parent:
 
             # Select a random gene (pattern) and remove it from the parent
-            gene = random.choice(parent)
+            # gene = random.choice(parent)
+            gene = findMinimalWastePattern(parent, length)
             parent.remove(gene)
+
+            pattern_parent_waste = patternWaste(gene, length)
+
+            if pattern_parent_waste > (base_length * 0.10):
+                # print('Waste too high')
+                continue
 
             # print(f"{'gene'}: {gene}")
             # print(f"{'length'}: {length}")

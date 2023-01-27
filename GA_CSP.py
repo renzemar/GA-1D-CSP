@@ -12,17 +12,11 @@ import time
 # Import the test data
 from data import objects, basePanels, lookup, subset_index, df_orders
 
-# THIS IS FOR TESTING PURPOSES ON SUBSETS#
-""""Use this code to test on subsets of the data. The name of the subset is the same as the name of the material. 
-In practise, the subset is the material that is currently being cut. No mixing of materials is allowed."""
-
-# END OF SUBSET TESTING CODE #
-
 # Genetic Algorithm constants:
-POPULATION_SIZE = 75  # The size of the population of individuals
+POPULATION_SIZE = 100  # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
-MAX_GENERATIONS = 50  # The maximum number of generations
-HALL_OF_FAME_SIZE = 10  # The size of the hall of fame
+MAX_GENERATIONS = 15  # The maximum number of generations
+HALL_OF_FAME_SIZE = 5  # The size of the hall of fame
 
 # Create the "FitnessMin" fitness class using the base Fitness class
 # Weights are set to -1.0 because we want to minimize the fitness function
@@ -85,7 +79,7 @@ def crossoverFunction(ind1, ind2):
 
 
 # registering the fitness function
-toolbox.register("evaluate", functions_GA.patternsWaste)
+toolbox.register("evaluate", functions_GA.individualWaste)
 
 
 # Roulette selection
@@ -112,7 +106,7 @@ def GA():
 
     # Prepare the statistics object
     stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("max", np.max)
+    stats.register("min", np.min)
     stats.register("avg", np.mean)
 
     # Define the hall-of-fame object
@@ -123,9 +117,9 @@ def GA():
                                               ngen=MAX_GENERATIONS, stats=stats, halloffame=hof, verbose=True)
 
     # Print the best solution found
+    best = hof.items[0]
 
-    best = None
-
+    # Print the best solution found
     for solution in hof.items:
         sanity = functions_GA.sanityCheck(solution)
 
@@ -145,14 +139,14 @@ def GA():
     nr_of_patters = len(best[0])
 
     # Use this for when using fitness function of minimal waste
-    waste = functions_GA.patternsWaste(best)
-    base_panel_material = nr_of_bases * 12450
-    material_used = waste[0] + base_panel_material
+    # waste = functions_GA.individualWaste(best)
+    # base_panel_material = nr_of_bases * 12450
+    # material_used = waste[0] + base_panel_material
 
     # Use this for when using fitness function of minimal waste
-    # material_used = functions.patternsWaste(best)
-    # base_panel_material = nr_of_bases * 12450
-    # waste = material_used[0] - base_panel_material
+    material_used = functions_GA.individualWaste(best)
+    base_panel_material = nr_of_bases * 12450
+    waste = material_used[0] - base_panel_material
 
     # Perform again if solution is invalid, this is a temporary fix
     # if not sanity and nr_of_bases < basePanels:
@@ -172,15 +166,15 @@ def GA():
     print(functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0]))
 
     # Extract the statistics
-    maxFitnessValues, meanFitnessValues = logbook.select("max", "avg")
+    minFitnessValues, meanFitnessValues = logbook.select("min", "avg")
 
     # Plot the statistics
     sns.set_style("whitegrid")
-    plt.plot(maxFitnessValues, color='red')
+    plt.plot(minFitnessValues, color='red')
     plt.plot(meanFitnessValues, color='green')
     plt.xlabel('Generation')
-    plt.ylabel('Max / Average Fitness')
-    plt.title('Max and Average fitness over Generations')
+    plt.ylabel('Min / Average Fitness')
+    plt.title('Min and Average fitness over Generations')
     plt.show()
 
 
