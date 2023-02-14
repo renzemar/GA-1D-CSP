@@ -10,7 +10,7 @@ import functions_dataprep
 import time
 
 # Import the test data
-from data import objects, basePanels, lookup, subset_index, df_orders
+from data import list_subsets, basePanels, lookup, df_orders
 
 # Genetic Algorithm constants:
 POPULATION_SIZE = 100  # The size of the population of individuals
@@ -26,26 +26,8 @@ creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 # The fitness attribute is of type "FitnessMin"
 creator.create("Individual", list, fitness=creator.FitnessMin)
 
-# Initialize the toolbox
-toolbox = base.Toolbox()
 
-# Register the "individualFunction" function in the toolbox
-# This function creates an individual by calling the "create_individual" function from the "functions" module
-# It takes in the "objects" and "base_length" data as arguments
-toolbox.register('individualFunction', functions_GA.create_individual, order_length_quantities=objects)
-
-# Register the "individualCreator" function in the toolbox This function creates an individual by calling the
-# "individualFunction" and using the "initRepeat" function from the "tools" module The created individual is
-# initialized with the "Individual" class and is repeated once
-toolbox.register("individualCreator", tools.initRepeat, creator.Individual, toolbox.individualFunction, 1)
-
-# Register the "population" function in the toolbox This function creates a population of individuals by calling the
-# "individualCreator" function and using the "initRepeat" function from the "tools" module The created population is
-# initialized as a list and has a length of POPULATION_SIZE
-toolbox.register("population", tools.initRepeat, list, toolbox.individualCreator)
-
-
-def crossoverFunction(ind1, ind2):
+def crossoverFunction(ind1, ind2, order_length_quantities):
     """
     This function creates offspring from two parent individuals by calling the `createOffspring` function and passing in
     the patterns of the parent individuals as arguments. It then creates new `Individual` objects using the offspring
@@ -61,7 +43,7 @@ def crossoverFunction(ind1, ind2):
     offsprings = []
 
     while len(offsprings) < 2:
-        offspring = functions_GA.createOffspring(ind1[0], ind2[0], order_length_quantities=objects)
+        offspring = functions_GA.createOffspring(ind1[0], ind2[0], order_length_quantities=order_length_quantities)
 
         # create a new Individual object and set its fitness attribute
         offspring_individual = creator.Individual([offspring])
@@ -69,7 +51,7 @@ def crossoverFunction(ind1, ind2):
         offsprings.append(offspring_individual)
 
         # Sanity check
-        sanity = functions_GA.sanityCheck(order_length_quantities=objects, population=offspring_individual)
+        sanity = functions_GA.sanityCheck(order_length_quantities=order_length_quantities, population=offspring_individual)
         nr_of_bases = functions_GA.sum_baseLength(offspring_individual[0])
 
         if not sanity and nr_of_bases < basePanels:
@@ -78,19 +60,40 @@ def crossoverFunction(ind1, ind2):
     return offsprings[0], offsprings[1]
 
 
-# registering the fitness function
-toolbox.register("evaluate", functions_GA.individualWaste, order_length_quantities=objects)
+def create_toolbox(order_length_quantities):
+    # Initialize the toolbox
+    toolbox = base.Toolbox()
 
+    # Register the "individualFunction" function in the toolbox
+    # This function creates an individual by calling the "create_individual" function from the "functions" module
+    # It takes in the "objects" and "base_length" data as arguments
+    toolbox.register('individualFunction', functions_GA.create_individual,
+                     order_length_quantities=order_length_quantities)
 
-# Roulette selection
-toolbox.register("select", tools.selRoulette)
+    # Register the "individualCreator" function in the toolbox This function creates an individual by calling the
+    # "individualFunction" and using the "initRepeat" function from the "tools" module The created individual is
+    # initialized with the "Individual" class and is repeated once
+    toolbox.register("individualCreator", tools.initRepeat, creator.Individual, toolbox.individualFunction, 1)
 
-# Create operator for crossover
-toolbox.register("mate", crossoverFunction)
+    # Register the "population" function in the toolbox This function creates a population of individuals by calling the
+    # "individualCreator" function and using the "initRepeat" function from the "tools" module The created population is
+    # initialized as a list and has a length of POPULATION_SIZE
+    toolbox.register("population", tools.initRepeat, list, toolbox.individualCreator)
+
+    # registering the fitness function
+    toolbox.register("evaluate", functions_GA.individualWaste, order_length_quantities=order_length_quantities)
+
+    # Roulette selection
+    toolbox.register("select", tools.selRoulette)
+
+    # Create operator for crossover
+    toolbox.register("mate", crossoverFunction, order_length_quantities=order_length_quantities)
+
+    return toolbox
 
 
 @functions_GA.measure_time
-def GA():
+def GA(order_length_quantities, subset_index):
     """
     This is the main Genetic Algorithm function which performs the flow of the algorithm and plots the statistics of the
     fitness values.
@@ -100,6 +103,9 @@ def GA():
     """
     # Measure time
     time.sleep(1)
+
+    # Create the toolbox
+    toolbox = create_toolbox(order_length_quantities=order_length_quantities)
 
     # Create the initial population (generation 0)
     population = toolbox.population(n=POPULATION_SIZE)
@@ -121,7 +127,7 @@ def GA():
 
     # Print the best solution found
     for solution in hof.items:
-        sanity = functions_GA.sanityCheck(order_length_quantities=objects, population=solution)
+        sanity = functions_GA.sanityCheck(order_length_quantities=order_length_quantities, population=solution)
 
         if sanity:
             best = solution
@@ -144,7 +150,7 @@ def GA():
     # material_used = waste[0] + base_panel_material
 
     # Use this for when using fitness function of minimal waste
-    material_used = functions_GA.individualWaste(best, order_length_quantities=objects)
+    material_used = functions_GA.individualWaste(best, order_length_quantities=order_length_quantities)
     base_panel_material = nr_of_bases * 12450
     waste = material_used[0] - base_panel_material
 
@@ -178,5 +184,18 @@ def GA():
     plt.show()
 
 
-GA()
+def loop():
+
+    for i in range(4):
+        subset_index = i
+        order_length_quantities = list_subsets[subset_index].copy()
+        print(f"Objects to optimize: {order_length_quantities}")
+        # objects = create_dict(df_orders) # Run on entire dataset instead
+        print(functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0]))
+        print(f"Number of subsets: {len(list_subsets)}")
+        print('Performing GA')
+        GA(order_length_quantities, subset_index)
+
+
+loop()
 
