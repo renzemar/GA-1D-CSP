@@ -161,12 +161,10 @@ def performance_set(df_orders, subset_keys):
 
     z = sum(y.values()) / 12450
 
-    a = sum(y.values())
+    waste = sum(y.values())
 
-    total_material = (nr_of_panels * 12450) + a
+    total_material = (nr_of_panels * 12450)
 
-    print(
-        f"-- Original Model Results = Analyzed subset: {k}, Total number of panels: {nr_of_panels}, Total material "
-        f"used: {total_material}")
+    return k, nr_of_panels, waste, total_material
 
-    return
+

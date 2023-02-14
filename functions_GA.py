@@ -477,9 +477,29 @@ def individualWaste(individual, order_length_quantities):
 
     # below is a different way to measure fitness, namely the total material used to cut all objects
     material_used = sum_baseLength(individual[0]) * 12450
-    waste_total += material_used
 
-    return waste_total,  # return a tuple
+    return material_used,  # return a tuple
+
+def CalcWaste(individual, order_length_quantities):
+    """
+    This function calculates the total waste for a given list of patterns. The waste is calculated
+    by subtracting the total length of all patterns in the list from the base length of the patterns.
+    The base length is the first element in each list in the list of patterns.
+
+    Parameters:
+    individual (list): A list of patterns. Each pattern is represented as a list of integers.
+
+    Returns:
+        tuple: A tuple containing the total waste as the only element.
+    """
+    lengths = list(order_length_quantities.keys())
+    # zipped_individual = zip_individual(individual)
+    waste_total = 0
+
+    for pattern in individual[0]:
+        waste_total += patternWaste(pattern, lengths)
+
+    return waste_total  # return a tuple
 
 
 def baseLengthsAmount(individual):

@@ -1,3 +1,4 @@
+import pandas as pd
 from deap import base
 from deap import creator
 from deap import tools
@@ -131,7 +132,6 @@ def GA(order_length_quantities, subset_index):
 
         if sanity:
             best = solution
-            print('Valid solution found')
             break
         else:
             print('Invalid solution found')
@@ -141,7 +141,7 @@ def GA(order_length_quantities, subset_index):
         return
 
     # Define the best individuals' characteristics
-    nr_of_bases = functions_GA.sum_baseLength(best[0])
+    N_nr_of_bases = functions_GA.sum_baseLength(best[0])
     nr_of_patters = len(best[0])
 
     # Use this for when using fitness function of minimal waste
@@ -150,9 +150,8 @@ def GA(order_length_quantities, subset_index):
     # material_used = waste[0] + base_panel_material
 
     # Use this for when using fitness function of minimal waste
-    material_used = functions_GA.individualWaste(best, order_length_quantities=order_length_quantities)
-    base_panel_material = nr_of_bases * 12450
-    waste = material_used[0] - base_panel_material
+    N_waste = functions_GA.CalcWaste(best, order_length_quantities=order_length_quantities)
+    N_material = best.fitness.values[0]
 
     # Perform again if solution is invalid, this is a temporary fix
     # if not sanity and nr_of_bases < basePanels:
@@ -163,39 +162,55 @@ def GA(order_length_quantities, subset_index):
 
     # Print the best individual's characteristics
     print("-- Best Ever Individual = ", best)
-    print("-- Best Ever Fitness = ", best.fitness.values[0])
-    print("-- Total Waste = ", waste)
-    print("-- Total Material Used = ", material_used)
-    print("-- Number of Base Lengths = ", nr_of_bases)
+    print("-- Best Ever Fitness (Material used) = ", N_material)
+    print("-- Total Waste = ", N_waste)
+    print("-- Number of Base Lengths = ", N_nr_of_bases)
     print("-- Number of Patterns = ", nr_of_patters)
     print("-- Sanity Check of Individual = ", sanity)
-    print(functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0]))
 
     # Extract the statistics
-    minFitnessValues, meanFitnessValues = logbook.select("min", "avg")
+    # minFitnessValues, meanFitnessValues = logbook.select("min", "avg")
 
     # Plot the statistics
-    sns.set_style("whitegrid")
-    plt.plot(minFitnessValues, color='red')
-    plt.plot(meanFitnessValues, color='green')
-    plt.xlabel('Generation')
-    plt.ylabel('Min / Average Fitness')
-    plt.title('Min and Average fitness over Generations')
-    plt.show()
+    # sns.set_style("whitegrid")
+    # plt.plot(minFitnessValues, color='red')
+    # plt.plot(meanFitnessValues, color='green')
+    # plt.xlabel('Generation')
+    # plt.ylabel('Min / Average Fitness')
+    # plt.title('Min and Average fitness over Generations')
+    # plt.show()
+
+    return N_waste, N_material, N_nr_of_bases
 
 
 def loop():
 
-    for i in range(4):
+    df_results = pd.DataFrame(columns=["O_material", "N_material", "O_waste", "N_waste", "O_panels", "N_panels"])
+
+    for i in range(5):
         subset_index = i
         order_length_quantities = list_subsets[subset_index].copy()
-        print(f"Objects to optimize: {order_length_quantities}")
-        # objects = create_dict(df_orders) # Run on entire dataset instead
-        print(functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0]))
+        k, O_nr_of_panels, O_waste, O_material = functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0])
+        print(f"Performing GA iteration: {i}")
+        N_waste, N_material, N_nr_of_bases = GA(order_length_quantities, subset_index)
+        print(f"Optimized subset: {order_length_quantities}")
+        print(
+            f"-- Original Model Results = Analyzed subset: {k}, Total number of panels: {O_nr_of_panels}, Total material "
+            f"used: {O_material}, Total waste: {O_waste}")
         print(f"Number of subsets: {len(list_subsets)}")
-        print('Performing GA')
-        GA(order_length_quantities, subset_index)
+
+        new_row = pd.DataFrame(
+            {'O_material': [O_material], 'N_material': [N_material], 'O_waste': [O_waste], 'N_waste': [N_waste],
+             'O_panels': [O_nr_of_panels], 'N_panels': [N_nr_of_bases]})
+
+        df_results = pd.concat([df_results, new_row], ignore_index=True)
+
+    return df_results
 
 
-loop()
+df_results = loop()
+print("Optimization complete - Results:")
+print(df_results)
+
+
 
