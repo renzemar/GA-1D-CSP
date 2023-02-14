@@ -32,7 +32,7 @@ toolbox = base.Toolbox()
 # Register the "individualFunction" function in the toolbox
 # This function creates an individual by calling the "create_individual" function from the "functions" module
 # It takes in the "objects" and "base_length" data as arguments
-toolbox.register('individualFunction', functions_GA.create_individual, objects)
+toolbox.register('individualFunction', functions_GA.create_individual, order_length_quantities=objects)
 
 # Register the "individualCreator" function in the toolbox This function creates an individual by calling the
 # "individualFunction" and using the "initRepeat" function from the "tools" module The created individual is
@@ -61,7 +61,7 @@ def crossoverFunction(ind1, ind2):
     offsprings = []
 
     while len(offsprings) < 2:
-        offspring = functions_GA.createOffspring(ind1[0], ind2[0])
+        offspring = functions_GA.createOffspring(ind1[0], ind2[0], order_length_quantities=objects)
 
         # create a new Individual object and set its fitness attribute
         offspring_individual = creator.Individual([offspring])
@@ -69,7 +69,7 @@ def crossoverFunction(ind1, ind2):
         offsprings.append(offspring_individual)
 
         # Sanity check
-        sanity = functions_GA.sanityCheck(offspring_individual)
+        sanity = functions_GA.sanityCheck(order_length_quantities=objects, population=offspring_individual)
         nr_of_bases = functions_GA.sum_baseLength(offspring_individual[0])
 
         if not sanity and nr_of_bases < basePanels:
@@ -79,7 +79,7 @@ def crossoverFunction(ind1, ind2):
 
 
 # registering the fitness function
-toolbox.register("evaluate", functions_GA.individualWaste)
+toolbox.register("evaluate", functions_GA.individualWaste, order_length_quantities=objects)
 
 
 # Roulette selection
@@ -121,7 +121,7 @@ def GA():
 
     # Print the best solution found
     for solution in hof.items:
-        sanity = functions_GA.sanityCheck(solution)
+        sanity = functions_GA.sanityCheck(order_length_quantities=objects, population=solution)
 
         if sanity:
             best = solution
@@ -139,12 +139,12 @@ def GA():
     nr_of_patters = len(best[0])
 
     # Use this for when using fitness function of minimal waste
-    # waste = functions_GA.individualWaste(best)
+    # waste = functions_GA.individualWaste(best, order_length_quantities=objects)
     # base_panel_material = nr_of_bases * 12450
     # material_used = waste[0] + base_panel_material
 
     # Use this for when using fitness function of minimal waste
-    material_used = functions_GA.individualWaste(best)
+    material_used = functions_GA.individualWaste(best, order_length_quantities=objects)
     base_panel_material = nr_of_bases * 12450
     waste = material_used[0] - base_panel_material
 

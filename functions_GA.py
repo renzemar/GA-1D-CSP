@@ -1,6 +1,6 @@
 from typing import List, Dict, Tuple, Any
 import random
-from data import objects, base_length
+from data import base_length
 import time
 import math
 
@@ -8,7 +8,7 @@ import math
 # Main functions for the Genetic Algorithm
 # Used in the GA_CSP file
 
-def sanityCheck(population: list[List[List[int]]]) -> str:
+def sanityCheck(order_length_quantities, population: list[List[List[int]]]) -> str:
     """
     This function checks the sanity of the given population. It checks if the sum of the patterns in each individual
     equals the sum of the demand.
@@ -28,7 +28,7 @@ def sanityCheck(population: list[List[List[int]]]) -> str:
             x = pattern[1:]
             total += sum(x) * pattern[0]
 
-        sum_demand = sum(objects.values())
+        sum_demand = sum(order_length_quantities.values())
 
         if total == sum_demand:
             sanity = True
@@ -98,19 +98,19 @@ def demand_length(sorted_objects: Dict[int, int]) -> Tuple[List[int], List[int]]
     return demand, length
 
 
-def sort_rer_one(objects: Dict[str, int]) -> Tuple[List[int], List[int]]:
+def sort_rer_one(order_length_quantities: Dict[str, int]) -> Tuple[List[int], List[int]]:
     """
     This function sorts the given dictionary of objects by their values in descending order,
     and returns two lists: one with the keys (demand) and one with the values (length).
 
     Parameters:
-    objects (dict): A dictionary where the keys are strings and the values are integers.
+    order_length_quantities (dict): A dictionary where the keys are strings and the values are integers.
 
     Returns:
         tuple: A tuple with two lists: one with the keys (demand) and one with the values (length).
     """
     # Sort the dictionary in descending order
-    sorted_objects = dict(sorted(objects.items(), reverse=True))
+    sorted_objects = dict(sorted(order_length_quantities.items(), reverse=True))
 
     # Get the demand and length lists from the sorted objects
     demand, length = demand_length(sorted_objects)
@@ -118,7 +118,7 @@ def sort_rer_one(objects: Dict[str, int]) -> Tuple[List[int], List[int]]:
     return demand, length
 
 
-def sort_rer_two(objects: Dict[int, int]) -> Tuple[List[int], List[int]]:
+def sort_rer_two(order_length_quantities: Dict[int, int]) -> Tuple[List[int], List[int]]:
     """
     This function shuffles a dictionary of objects randomly, and then returns the demand and length lists.
 
@@ -129,7 +129,7 @@ def sort_rer_two(objects: Dict[int, int]) -> Tuple[List[int], List[int]]:
         tuple: A tuple containing the demand and length lists.
     """
     # Shuffle the objects randomly
-    l = list(objects.items())
+    l = list(order_length_quantities.items())
     random.shuffle(l)
     shuffled_objects = dict(l)
 
@@ -208,7 +208,7 @@ def zip_individual(individual: List[int]) -> List[List[int]]:
     return sublists
 
 
-def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], List[int]]:
+def create_pattern(order_length_quantities: Dict, rer_one: bool) -> Tuple[List[int], List[int], List[int]]:
     """
     This function creates a cutting pattern based on the demand and lengths of the given objects. The pattern is
     sorted by the first sorting method if rer_one is True, and sorted by the second sorting method if rer_one is
@@ -224,12 +224,12 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
     """
     # If the first sorting method has already been used, sort the objects by randomly shuffling them
     if rer_one:
-        demand, length = sort_rer_one(objects)
+        demand, length = sort_rer_one(order_length_quantities=order_length_quantities)
     elif not rer_one:
-        demand, length = sort_rer_two(objects)
+        demand, length = sort_rer_two(order_length_quantities=order_length_quantities)
 
     # Create an empty population
-    pattern = create_list_of_zeros(len(objects) + 1)
+    pattern = create_list_of_zeros(len(order_length_quantities) + 1)
 
     max_times = 9999999  # temp solution
 
@@ -281,7 +281,7 @@ def create_pattern(objects: Dict, rer_one: bool) -> Tuple[List[int], List[int], 
     return pattern, length, demand
 
 
-def patternCalculations(pattern: List[int], length: List[int], demand: List[int], restore: bool) -> Tuple[List[int],
+def patternCalculations(pattern: List[int], length: List[int], demand: List[int], restore: bool, order_length_quantities) -> Tuple[List[int],
 List[int],
 List[int]]:
     """
@@ -302,14 +302,11 @@ List[int]]:
     length_requirements = pattern[1:]
     demand = subtract_lists(demand, length_requirements)
 
-    # Update the objects dictionary with the remaining demand
-    objects2 = dict(zip(length, demand))
-
     # Restore pattern, length to original sort order
     if restore:
 
         pattern_dict = dict(zip(length, length_requirements))
-        pattern_dict_sorted = dict(map(lambda k: (k, pattern_dict[k]), objects.keys()))
+        pattern_dict_sorted = dict(map(lambda k: (k, pattern_dict[k]), order_length_quantities.keys()))
 
         pattern = list(pattern_dict_sorted.values())
 
@@ -321,7 +318,7 @@ List[int]]:
         demand.pop(0)
 
         demand_dict = dict(zip(length, demand))
-        demand_dict_sorted = dict(map(lambda k: (k, demand_dict[k]), objects.keys()))
+        demand_dict_sorted = dict(map(lambda k: (k, demand_dict[k]), order_length_quantities.keys()))
 
         demand = list(demand_dict_sorted.values())
         length = list(demand_dict_sorted.keys())
@@ -343,7 +340,7 @@ List[int]]:
 rer_one = True
 
 
-def create_individual(objects):
+def create_individual(order_length_quantities):
     """
     Create a cutting pattern for a given set of objects and base length.
 
@@ -356,7 +353,7 @@ def create_individual(objects):
     """
 
     # Create a copy of the objects dictionary to avoid modifying the original input
-    objects2 = objects.copy()
+    objects2 = order_length_quantities.copy()
 
     # Sort the objects by length and get the sorted lengths and demand
     demand = list(objects2.values())
@@ -370,10 +367,11 @@ def create_individual(objects):
     # Loop until all objects have been cut
     while sum(demand) > 0:
         # Create pattern and return the length and demand in it's used sort order
-        pattern, length, demand = create_pattern(objects2, rer_one)
+        pattern, length, demand = create_pattern(order_length_quantities=objects2, rer_one=rer_one)
 
         # Set the pattern cutting times, and recalculate demand given the current sort order
-        pattern, length, demand = patternCalculations(pattern, length, demand, restore=True)
+        pattern, length, demand = patternCalculations(pattern, length, demand, restore=True,
+                                                      order_length_quantities=order_length_quantities)
 
         # Update the objects dictionary with the remaining demand
         objects2 = dict(zip(length, demand))
@@ -389,7 +387,7 @@ def create_individual(objects):
     # individual = [val for sublist in individual for val in sublist]
 
     # Sanity check
-    sanity = sanityCheck([individual])
+    sanity = sanityCheck(order_length_quantities=order_length_quantities, population=[individual])
     if not sanity:
         print('False offspring created')
 
@@ -397,13 +395,12 @@ def create_individual(objects):
     return individual
 
 
-def create_initial_population(objects: List[Any], base_length: int, POPULATION_SIZE: int) -> List[List[Any]]:
+def create_initial_population(order_length_quantities: List[Any], POPULATION_SIZE: int) -> List[List[Any]]:
     """
     This function generates a list of randomly generated individuals, with a given base length and number of objects.
 
     Parameters:
-        objects (list): The list of objects to use for generating the individuals.
-        base_length (int): The base length for each individual.
+        order_length_quantities (list): The list of objects to use for generating the individuals.
         POPULATION_SIZE (int): The size of the population to generate.
 
     Returns:
@@ -412,7 +409,7 @@ def create_initial_population(objects: List[Any], base_length: int, POPULATION_S
     population = []
 
     for i in range(POPULATION_SIZE):
-        individual = create_individual(objects, base_length)
+        individual = create_individual(order_length_quantities=order_length_quantities)
         population.append(individual)
 
     return population
@@ -459,7 +456,7 @@ def findMinimalWastePattern(individual, lengths):
     return individual[min_waste_index]
 
 
-def individualWaste(individual):
+def individualWaste(individual, order_length_quantities):
     """
     This function calculates the total waste for a given list of patterns. The waste is calculated
     by subtracting the total length of all patterns in the list from the base length of the patterns.
@@ -471,7 +468,7 @@ def individualWaste(individual):
     Returns:
         tuple: A tuple containing the total waste as the only element.
     """
-    lengths = list(objects.keys())
+    lengths = list(order_length_quantities.keys())
     # zipped_individual = zip_individual(individual)
     waste_total = 0
 
@@ -504,7 +501,7 @@ def baseLengthsAmount(individual):
     return baseLengths_total,  # return a tuple
 
 
-def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[int]]:
+def createOffspring(ind1: List[List[int]], ind2: List[List[int]], order_length_quantities) -> List[List[int]]:
     """
     This function creates offspring patterns by combining patterns from two individual patterns, using a random selection
     process. It also applies the selected patterns to the demand for objects of different lengths, as often as possible.
@@ -523,7 +520,7 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
     offspring = []
 
     # Store the original demand
-    demand, length = demand_length(objects)
+    demand, length = demand_length(order_length_quantities)
 
     # Create copies of the individual to work with
     individual1 = ind1.copy()
@@ -571,7 +568,8 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
             # print(f"{'demand after initial removal of pattern'}: {demand}")
 
             # Set the pattern cutting times, and return length and demand in original order
-            pattern, length, demand = patternCalculations(gene, length, demand, restore=False)
+            pattern, length, demand = patternCalculations(gene, length, demand, restore=False,
+                                                          order_length_quantities=order_length_quantities)
 
             # print(f"{'demand after recalculation'}: {demand}")
 
@@ -588,16 +586,17 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
             # print("running RER1")
 
             # Set the length to create a dictionary with the residual demand
-            length = list(objects.keys())
+            length = list(order_length_quantities.keys())
 
             # Update the objects dictionary with the remaining demand
             objects2 = dict(zip(length, demand))
 
             # Create pattern and return the length and demand in it's used sort order
-            pattern, length, demand = create_pattern(objects2, True)
+            pattern, length, demand = create_pattern(order_length_quantities=objects2, rer_one=True)
 
             # Set the pattern cutting times, and return length and demand in original order
-            pattern, length, demand = patternCalculations(pattern, length, demand, restore=True)
+            pattern, length, demand = patternCalculations(pattern, length, demand, restore=True,
+                                                          order_length_quantities=order_length_quantities)
 
             # Add the current pattern to the list of cutting patterns
             offspring.append(pattern)
@@ -605,7 +604,7 @@ def createOffspring(ind1: List[List[int]], ind2: List[List[int]]) -> List[List[i
             # print(f"{'pattern'}: {pattern}")
 
     # Sanity check
-    sanity = sanityCheck([offspring])
+    sanity = sanityCheck(order_length_quantities=order_length_quantities, population=[offspring])
 
     if not sanity:
         print('False offspring created')
