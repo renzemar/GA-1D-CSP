@@ -3,6 +3,8 @@ import functions_dataprep
 
 # Read the production data from alpha deuren
 df_orders = pd.read_excel('AlphaProductionData.xlsx')
+# df_production_orders = pd.read_excel('tProductieISO.xlsx')
+df_production_orders_small = pd.read_excel('tProductieISO_Small.xlsx')
 materials = df_orders['MateriaalPaneelTxt'].unique()
 
 # This is not really safe, base length might be different for each material

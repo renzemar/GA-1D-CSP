@@ -11,12 +11,12 @@ import functions_dataprep
 import time
 
 # Import the test data
-from data import list_subsets, basePanels, lookup, df_orders
+from data import basePanels, df_orders, df_production_orders_small
 
 # Genetic Algorithm constants:
 POPULATION_SIZE = 100  # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
-MAX_GENERATIONS = 15  # The maximum number of generations
+MAX_GENERATIONS = 10  # The maximum number of generations
 HALL_OF_FAME_SIZE = 5  # The size of the hall of fame
 
 # Create the "FitnessMin" fitness class using the base Fitness class
@@ -52,7 +52,8 @@ def crossoverFunction(ind1, ind2, order_length_quantities):
         offsprings.append(offspring_individual)
 
         # Sanity check
-        sanity = functions_GA.sanityCheck(order_length_quantities=order_length_quantities, population=offspring_individual)
+        sanity = functions_GA.sanityCheck(order_length_quantities=order_length_quantities,
+                                          population=offspring_individual)
         nr_of_bases = functions_GA.sum_baseLength(offspring_individual[0])
 
         if not sanity and nr_of_bases < basePanels:
@@ -183,21 +184,29 @@ def GA(order_length_quantities, subset_index):
     return N_waste, N_material, N_nr_of_bases
 
 
-def loop():
+def OptimizeDay(data_day, date):
+
+    subsets = functions_dataprep.panel_count(data_day)
+    dict_subsets = functions_dataprep.create_subsets(data_day, subsets)
+    day_subsets = functions_dataprep.list_subsets(dict_subsets)
+    lookup = pd.DataFrame()
+    lookup['Key'] = dict_subsets.keys()
 
     df_results = pd.DataFrame(columns=["O_material", "N_material", "O_waste", "N_waste", "O_panels", "N_panels"])
 
-    for i in range(len(list_subsets)):
+    for i in range(len(day_subsets)):
         subset_index = i
-        order_length_quantities = list_subsets[subset_index].copy()
-        k, O_nr_of_panels, O_waste, O_material = functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0])
+        order_length_quantities = day_subsets[subset_index].copy()
+        k, O_nr_of_panels, O_waste, O_material = functions_dataprep.performance_set(df_orders,
+                                                                                    lookup.loc[subset_index][0])
         print(f"Performing GA iteration: {i}")
         N_waste, N_material, N_nr_of_bases = GA(order_length_quantities, subset_index)
         print(f"Optimized subset: {order_length_quantities}")
         print(
-            f"-- Original Model Results = Analyzed subset: {k}, Total number of panels: {O_nr_of_panels}, Total material "
+            f"-- Original Model Results on {date} = Analyzed subset: {k}, Total number of panels: {O_nr_of_panels}"
+            f", Total material "
             f"used: {O_material}, Total waste: {O_waste}")
-        print(f"Number of subsets: {len(list_subsets)}")
+        print(f"Number of subsets: {len(day_subsets)}")
 
         new_row = pd.DataFrame(
             {'O_material': [O_material], 'N_material': [N_material], 'O_waste': [O_waste], 'N_waste': [N_waste],
@@ -208,31 +217,69 @@ def loop():
     return df_results
 
 
-df_results = loop()
+def OptimizeRange(df_production_orders, nr_of_days, days):
+    df_production_orders['ProductieTijd'] = pd.to_datetime(df_production_orders['ProductieTijd'])
+    df_production_orders['ProductieTijd'] = df_production_orders['ProductieTijd'].dt.date
+    amount_of_days_available = len(df_production_orders['ProductieTijd'].unique())
+
+    if amount_of_days_available < nr_of_days:
+        print("Not enough days in the dataset. Changing nr_of_days to the number of days in the dataset.")
+        nr_of_days = amount_of_days_available
+
+    if days:
+        print(f"List of days is provided: {days}. Optimizing only for these days. nr_of_days is ignored.")
+        input_dates = pd.to_datetime(days)
+        input_dates = pd.to_datetime(input_dates).date
+
+        results = pd.DataFrame()
+        for date in input_dates:
+            filtered_df = df_production_orders[df_production_orders['ProductieTijd'] == date]
+            results = pd.concat([results, filtered_df])
+
+        df_production_orders = results
+        nr_of_days = len(df_production_orders['ProductieTijd'].unique())
+
+    groups = df_production_orders.groupby("ProductieTijd")
+    groups_list = [g[1] for g in list(groups)]
+
+    for data_day in groups_list[:nr_of_days]:
+        unique_bases = len(data_day['Lengte'].unique())
+        date = data_day.iloc[0]['ProductieTijd']
+
+        if unique_bases > 1:
+            print(f"Performing GA iteration on: {date}")
+            print('More than one base length found, skipping day')
+            continue
+
+        else:
+            df_results = OptimizeDay(data_day, date)
+            # Print the results
+            print("Optimization complete - Results:")
+            print(df_results)
+            visualize_results(df_results, date)
 
 
-print("Optimization complete - Results:")
-print(df_results)
+def visualize_results(df_results, date):
+    # Calculate the total values for each column
+    totals = df_results.sum()
 
-# Calculate the total values for each column
-totals = df_results.sum()
+    # Define the pairs of variables to compare
+    pairs = [('O_material', 'N_material'), ('O_waste', 'N_waste'), ('O_panels', 'N_panels')]
 
-# Define the pairs of variables to compare
-pairs = [('O_material', 'N_material'), ('O_waste', 'N_waste'), ('O_panels', 'N_panels')]
+    # Create a figure with three subplots
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
 
-# Create a figure with three subplots
-fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    # Loop over the subplots and create a bar plot for each pair of variables
+    for i, (var1, var2) in enumerate(pairs):
+        ax = axes[i]
+        ax.bar([var1, var2], [totals[var1], totals[var2]])
+        ax.set_title(f'{var1} vs. {var2}')
+        ax.set_ylabel('Total')
 
-# Loop over the subplots and create a bar plot for each pair of variables
-for i, (var1, var2) in enumerate(pairs):
-    ax = axes[i]
-    ax.bar([var1, var2], [totals[var1], totals[var2]])
-    ax.set_title(f'{var1} vs. {var2}')
-    ax.set_ylabel('Total')
-
-# Adjust the layout of the subplots and display the figure
-plt.tight_layout()
-plt.show()
-
+    # Adjust the layout of the subplots and display the figure
+    plt.suptitle(f"Results for {date}")
+    plt.tight_layout()
+    plt.show()
 
 
+OptimizeRange(df_production_orders=df_production_orders_small, nr_of_days=0, days=['2023-12-1', '2023-11-1'])
