@@ -187,7 +187,7 @@ def loop():
 
     df_results = pd.DataFrame(columns=["O_material", "N_material", "O_waste", "N_waste", "O_panels", "N_panels"])
 
-    for i in range(5):
+    for i in range(len(list_subsets)):
         subset_index = i
         order_length_quantities = list_subsets[subset_index].copy()
         k, O_nr_of_panels, O_waste, O_material = functions_dataprep.performance_set(df_orders, lookup.loc[subset_index][0])
@@ -209,8 +209,30 @@ def loop():
 
 
 df_results = loop()
+
+
 print("Optimization complete - Results:")
 print(df_results)
+
+# Calculate the total values for each column
+totals = df_results.sum()
+
+# Define the pairs of variables to compare
+pairs = [('O_material', 'N_material'), ('O_waste', 'N_waste'), ('O_panels', 'N_panels')]
+
+# Create a figure with three subplots
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+
+# Loop over the subplots and create a bar plot for each pair of variables
+for i, (var1, var2) in enumerate(pairs):
+    ax = axes[i]
+    ax.bar([var1, var2], [totals[var1], totals[var2]])
+    ax.set_title(f'{var1} vs. {var2}')
+    ax.set_ylabel('Total')
+
+# Adjust the layout of the subplots and display the figure
+plt.tight_layout()
+plt.show()
 
 
 
