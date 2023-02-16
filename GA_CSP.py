@@ -11,13 +11,13 @@ import functions_dataprep
 import time
 
 # Import the test data
-from data import basePanels, df_orders, df_production_orders_small
+from data import basePanels, df_orders#, df_production_orders
 
 # Genetic Algorithm constants:
 POPULATION_SIZE = 100  # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
 MAX_GENERATIONS = 10  # The maximum number of generations
-HALL_OF_FAME_SIZE = 5  # The size of the hall of fame
+HALL_OF_FAME_SIZE = 3  # The size of the hall of fame
 
 # Create the "FitnessMin" fitness class using the base Fitness class
 # Weights are set to -1.0 because we want to minimize the fitness function
@@ -192,25 +192,27 @@ def OptimizeDay(data_day, date):
     lookup = pd.DataFrame()
     lookup['Key'] = dict_subsets.keys()
 
-    df_results = pd.DataFrame(columns=["O_material", "N_material", "O_waste", "N_waste", "O_panels", "N_panels"])
+    df_results = pd.DataFrame(columns=["Analyzed subset", "O_material", "N_material", "O_waste", "N_waste", "O_panels", "N_panels"])
 
     for i in range(len(day_subsets)):
         subset_index = i
         order_length_quantities = day_subsets[subset_index].copy()
-        k, O_nr_of_panels, O_waste, O_material = functions_dataprep.performance_set(df_orders,
+        analyzed_subset, O_nr_of_panels, O_waste, O_material = functions_dataprep.performance_set(df_orders,
                                                                                     lookup.loc[subset_index][0])
         print(f"Performing GA iteration: {i}")
         N_waste, N_material, N_nr_of_bases = GA(order_length_quantities, subset_index)
         print(f"Optimized subset: {order_length_quantities}")
         print(
-            f"-- Original Model Results on {date} = Analyzed subset: {k}, Total number of panels: {O_nr_of_panels}"
+            f"-- Original Model Results on {date} = Analyzed subset: {analyzed_subset}, Total number of panels: {O_nr_of_panels}"
             f", Total material "
             f"used: {O_material}, Total waste: {O_waste}")
         print(f"Number of subsets: {len(day_subsets)}")
 
+        subset_string = tuple(map(str, analyzed_subset))
+
         new_row = pd.DataFrame(
-            {'O_material': [O_material], 'N_material': [N_material], 'O_waste': [O_waste], 'N_waste': [N_waste],
-             'O_panels': [O_nr_of_panels], 'N_panels': [N_nr_of_bases]})
+            {'Analyzed Subset': subset_string, 'O_material': O_material, 'N_material': N_material, 'O_waste': O_waste, 'N_waste': N_waste,
+             'O_panels': O_nr_of_panels, 'N_panels': N_nr_of_bases})
 
         df_results = pd.concat([df_results, new_row], ignore_index=True)
 
@@ -282,4 +284,4 @@ def visualize_results(df_results, date):
     plt.show()
 
 
-OptimizeRange(df_production_orders=df_production_orders_small, nr_of_days=0, days=['2023-12-1', '2023-11-1'])
+OptimizeRange(df_production_orders=df_orders, nr_of_days=1, days=[])
