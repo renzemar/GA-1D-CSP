@@ -11,10 +11,10 @@ import functions_dataprep
 import time
 
 # Import the test data
-from data import df_production_orders
+from data import df_production_orders_small
 
 # Genetic Algorithm constants:
-POPULATION_SIZE = 250  # The size of the population of individuals
+POPULATION_SIZE = 250 # The size of the population of individuals
 P_CROSSOVER = 0.9  # probability for crossover
 MAX_GENERATIONS = 15  # The maximum number of generations
 HALL_OF_FAME_SIZE = 3  # The size of the hall of fame
@@ -300,4 +300,4 @@ def visualize_results(df_results, date):
     plt.show()
 
 
-OptimizeRange(df_production_orders=df_production_orders, nr_of_days=99, days=[])
+OptimizeRange(df_production_orders=df_production_orders_small, nr_of_days=0, days=['2023-01-30', '2023-02-02'])

@@ -497,7 +497,7 @@ def CalcWaste(individual, order_length_quantities):
     waste_total = 0
 
     for pattern in individual[0]:
-        waste_total += patternWaste(pattern, lengths)
+        waste_total += pattern[0] * patternWaste(pattern, lengths)
 
     return waste_total  # return a tuple
 
