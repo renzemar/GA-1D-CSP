@@ -4,7 +4,6 @@ from deap import creator
 from deap import tools
 from deap import algorithms
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import functions_GA
 import functions_dataprep
@@ -95,7 +94,7 @@ def create_toolbox(order_length_quantities):
 
 
 @functions_GA.measure_time
-def GA(order_length_quantities, subset_index):
+def GA(order_length_quantities):
     """
     This is the main Genetic Algorithm function which performs the flow of the algorithm and plots the statistics of the
     fitness values.
@@ -200,7 +199,7 @@ def OptimizeDay(data_day, date):
         analyzed_subset, O_nr_of_panels, O_waste, O_material = functions_dataprep.performance_set(data_day,
                                                                                     lookup.loc[subset_index][0])
         print(f"Performing GA iteration: {i}")
-        N_waste, N_material, N_nr_of_bases = GA(order_length_quantities, subset_index)
+        N_waste, N_material, N_nr_of_bases = GA(order_length_quantities)
         print(f"Optimized subset: {order_length_quantities}")
         print(
             f"-- Original Model Results on {date} = Analyzed subset: {analyzed_subset}, Total number of panels: {O_nr_of_panels}"
@@ -300,4 +299,4 @@ def visualize_results(df_results, date):
     plt.show()
 
 
-OptimizeRange(df_production_orders=df_production_orders_small, nr_of_days=0, days=['2023-01-30', '2023-02-02'])
+OptimizeRange(df_production_orders=df_production_orders_small, nr_of_days=0, days=['2023-02-02'])

@@ -76,18 +76,6 @@ def panel_count(df):
     # create a new DataFrame containing only the relevant columns
     df_subset = df[['MateriaalPaneelTxt', 'Dikte', 'Hoogte']]
     # group the DataFrame by the unique combinations of the columns
-    groups = df_subset
-
-
-def panel_count(df):
-    """
-    This function groups the dataframe by 'MateriaalPaneelTxt', 'Dikte', 'Hoogte' and returns a dictionary with counts of the unique combinations
-    :param df: dataframe
-    :return: dictionary with counts of unique combinations of 'MateriaalPaneelTxt', 'Dikte', 'Hoogte'
-    """
-    # create a new DataFrame containing only the relevant columns
-    df_subset = df[['MateriaalPaneelTxt', 'Dikte', 'Hoogte']]
-    # group the DataFrame by the unique combinations of the columns
     groups = df_subset.groupby(['MateriaalPaneelTxt', 'Dikte', 'Hoogte']).size()
     # convert the result to a dictionary
     panel_count_dict = groups.to_dict()
